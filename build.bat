@@ -57,11 +57,10 @@ echo √ 后端依赖安装完成
 
 REM 5. 打包后端
 echo.
-echo [5/5] 打包后端可执行文件...
+echo [5/6] 打包后端可执行文件...
 pyinstaller --clean --noconfirm ^
     --name police-alert ^
     --onefile ^
-    --add-data "static;static" ^
     --hidden-import uvicorn.logging ^
     --hidden-import uvicorn.loops ^
     --hidden-import uvicorn.loops.auto ^
@@ -77,12 +76,19 @@ pyinstaller --clean --noconfirm ^
 cd ..
 echo √ 打包完成
 
-REM 6. 输出结果
+REM 6. 复制静态文件到 dist 目录
+echo.
+echo [6/6] 复制静态文件到 dist 目录...
+xcopy /s /e /y backend\static backend\dist\static\
+echo √ 静态文件已复制
+
+REM 7. 输出结果
 echo.
 echo ==========================================
 echo √ 打包成功！
 echo ==========================================
 echo 可执行文件位置: backend\dist\police-alert.exe
+echo 静态文件位置: backend\dist\static\
 echo.
 echo 运行方法:
 echo   cd backend\dist

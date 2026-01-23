@@ -60,11 +60,10 @@ pip install pyinstaller > /dev/null
 echo -e "${GREEN}✓ 后端依赖安装完成${NC}"
 
 # 5. 打包后端
-echo -e "\n${BLUE}[5/5] 打包后端可执行文件...${NC}"
+echo -e "\n${BLUE}[5/6] 打包后端可执行文件...${NC}"
 pyinstaller --clean --noconfirm \
     --name police-alert \
     --onefile \
-    --add-data "static:static" \
     --hidden-import uvicorn.logging \
     --hidden-import uvicorn.loops \
     --hidden-import uvicorn.loops.auto \
@@ -80,11 +79,17 @@ pyinstaller --clean --noconfirm \
 cd ..
 echo -e "${GREEN}✓ 打包完成${NC}"
 
+# 6. 复制静态文件到 dist 目录
+echo -e "\n${BLUE}[6/6] 复制静态文件到 dist 目录...${NC}"
+cp -r backend/static backend/dist/
+echo -e "${GREEN}✓ 静态文件已复制${NC}"
+
 # 6. 输出结果
 echo -e "\n=========================================="
 echo -e "${GREEN}✓ 打包成功！${NC}"
 echo "=========================================="
 echo -e "可执行文件位置: ${BLUE}backend/dist/police-alert${NC}"
+echo -e "静态文件位置: ${BLUE}backend/dist/static/${NC}"
 echo ""
 echo "运行方法:"
 echo "  cd backend/dist"

@@ -48,12 +48,12 @@ app.include_router(data.router, prefix="/api/v1/data", tags=["数据"])
 app.include_router(admin.router, prefix="/api/v1", tags=["管理后台"])
 
 # 挂载静态文件（前端）
-# PyInstaller 打包后，静态文件在 _MEIPASS 目录下
+# 静态文件在可执行文件同级目录下
 if getattr(sys, 'frozen', False):
-    # 打包后的路径
-    base_path = sys._MEIPASS
+    # 打包后：可执行文件所在目录
+    base_path = os.path.dirname(sys.executable)
 else:
-    # 开发环境路径
+    # 开发环境：main.py 所在目录
     base_path = os.path.dirname(__file__)
 
 static_dir = os.path.join(base_path, "static")

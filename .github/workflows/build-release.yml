@@ -74,16 +74,8 @@ jobs:
         working-directory: backend
         shell: bash
         run: |
-          # 根据平台设置分隔符
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            SEPARATOR=";"
-          else
-            SEPARATOR=":"
-          fi
-
           pyinstaller --name police-alert \
             --onefile \
-            --add-data "static${SEPARATOR}static" \
             --hidden-import uvicorn.logging \
             --hidden-import uvicorn.loops \
             --hidden-import uvicorn.loops.auto \
@@ -96,26 +88,37 @@ jobs:
             --hidden-import uvicorn.lifespan.on \
             main.py
 
-      # 8. 准备发布文件
+      # 8. 复制静态文件到 dist 目录
+      - name: Copy Static Files to Dist
+        shell: bash
+        run: |
+          cp -r backend/static backend/dist/
+
+      # 9. 准备发布文件
       - name: Prepare Release Files
         shell: bash
         run: |
           mkdir -p release
           if [ "${{ matrix.platform }}" = "windows" ]; then
             cp backend/dist/police-alert.exe release/
-            echo "ASSET_PATH=release/police-alert.exe" >> $GITHUB_ENV
-            echo "ASSET_NAME=${{ matrix.artifact_name }}.exe" >> $GITHUB_ENV
+            cp -r backend/dist/static release/
+            cd release
+            7z a -tzip ${{ matrix.artifact_name }}.zip police-alert.exe static
+            cd ..
+            echo "ASSET_PATH=release/${{ matrix.artifact_name }}.zip" >> $GITHUB_ENV
+            echo "ASSET_NAME=${{ matrix.artifact_name }}.zip" >> $GITHUB_ENV
           else
             cp backend/dist/police-alert release/
+            cp -r backend/dist/static release/
             chmod +x release/police-alert
             cd release
-            tar -czf ${{ matrix.artifact_name }}.tar.gz police-alert
+            tar -czf ${{ matrix.artifact_name }}.tar.gz police-alert static
             cd ..
             echo "ASSET_PATH=release/${{ matrix.artifact_name }}.tar.gz" >> $GITHUB_ENV
             echo "ASSET_NAME=${{ matrix.artifact_name }}.tar.gz" >> $GITHUB_ENV
           fi
 
-      # 9. 上传构建产物
+      # 10. 上传构建产物
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -146,7 +149,7 @@ jobs:
         with:
           files: |
             artifacts/police-alert-linux-x64/*.tar.gz
-            artifacts/police-alert-windows-x64/*.exe
+            artifacts/police-alert-windows-x64/*.zip
             artifacts/police-alert-macos-x64/*.tar.gz
           draft: false
           prerelease: false

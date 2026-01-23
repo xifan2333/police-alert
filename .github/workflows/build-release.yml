@@ -1,0 +1,147 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送 v* 标签时触发（如 v1.0.0）
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            artifact_name: police-alert-linux-x64
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            artifact_name: police-alert-windows-x64
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            artifact_name: police-alert-macos-x64
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # 3. 设置 Python 环境
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 4. 构建前端
+      - name: Build Frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      # 5. 复制前端产物到后端静态目录
+      - name: Copy Frontend to Backend
+        shell: bash
+        run: |
+          mkdir -p backend/static
+          cp -r frontend/dist/* backend/static/
+
+      # 6. 安装后端依赖
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+          pip install pyinstaller
+
+      # 7. 打包后端（PyInstaller）
+      - name: Build Backend with PyInstaller
+        working-directory: backend
+        shell: bash
+        run: |
+          pyinstaller --name police-alert \
+            --onefile \
+            --add-data "static:static" \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols \
+            --hidden-import uvicorn.protocols.http \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.protocols.websockets \
+            --hidden-import uvicorn.protocols.websockets.auto \
+            --hidden-import uvicorn.lifespan \
+            --hidden-import uvicorn.lifespan.on \
+            main.py
+
+      # 8. 准备发布文件
+      - name: Prepare Release Files
+        shell: bash
+        run: |
+          mkdir -p release
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            cp backend/dist/police-alert.exe release/
+            echo "ASSET_PATH=release/police-alert.exe" >> $GITHUB_ENV
+            echo "ASSET_NAME=${{ matrix.artifact_name }}.exe" >> $GITHUB_ENV
+          else
+            cp backend/dist/police-alert release/
+            chmod +x release/police-alert
+            cd release
+            tar -czf ${{ matrix.artifact_name }}.tar.gz police-alert
+            cd ..
+            echo "ASSET_PATH=release/${{ matrix.artifact_name }}.tar.gz" >> $GITHUB_ENV
+            echo "ASSET_NAME=${{ matrix.artifact_name }}.tar.gz" >> $GITHUB_ENV
+          fi
+
+      # 9. 上传构建产物
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ env.ASSET_PATH }}
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 下载所有构建产物
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # 3. 创建 Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/police-alert-linux-x64/*.tar.gz
+            artifacts/police-alert-windows-x64/*.exe
+            artifacts/police-alert-macos-x64/*.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

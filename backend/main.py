@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.init_db import init_database
 import os
+import sys
 
 
 
@@ -47,7 +48,15 @@ app.include_router(data.router, prefix="/api/v1/data", tags=["数据"])
 app.include_router(admin.router, prefix="/api/v1", tags=["管理后台"])
 
 # 挂载静态文件（前端）
-static_dir = os.path.join(os.path.dirname(__file__), "static")
+# PyInstaller 打包后，静态文件在 _MEIPASS 目录下
+if getattr(sys, 'frozen', False):
+    # 打包后的路径
+    base_path = sys._MEIPASS
+else:
+    # 开发环境路径
+    base_path = os.path.dirname(__file__)
+
+static_dir = os.path.join(base_path, "static")
 if os.path.exists(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
@@ -74,4 +83,11 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)
+    # 打包后禁用 reload，避免一直重启
+    is_packaged = getattr(sys, 'frozen', False)
+    uvicorn.run(
+        "main:app" if not is_packaged else app,
+        host="0.0.0.0",
+        port=8000,
+        reload=False if is_packaged else settings.DEBUG
+    )

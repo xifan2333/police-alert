@@ -74,9 +74,16 @@ jobs:
         working-directory: backend
         shell: bash
         run: |
+          # 根据平台设置分隔符
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            SEPARATOR=";"
+          else
+            SEPARATOR=":"
+          fi
+
           pyinstaller --name police-alert \
             --onefile \
-            --add-data "static:static" \
+            --add-data "static${SEPARATOR}static" \
             --hidden-import uvicorn.logging \
             --hidden-import uvicorn.loops \
             --hidden-import uvicorn.loops.auto \

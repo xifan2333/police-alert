@@ -9,7 +9,7 @@ import { formatDateTime } from '@/utils/datetime'
 const rawData = ref([])
 const loading = ref(true)
 const error = ref(null)
-const filterStatus = ref(null) // null 表示默认筛选（未调解、待盯办）
+const filterStatus = ref(null) // null 表示显示所有数据
 const scrollTableRef = ref(null)
 
 // 表头配置
@@ -91,63 +91,61 @@ onMounted(() => {
     <PageHeader title="矛盾纠纷管理" />
 
     <div class="content-wrapper">
-      <!-- 筛选按钮 -->
-      <div class="filter-bar">
-        <button
-          @click="handleFilter(null)"
-          :class="[
-            'filter-btn',
-            filterStatus === null ? 'active' : ''
-          ]"
-        >
-          默认筛选
-        </button>
-        <button
-          @click="handleFilter('未调解')"
-          :class="[
-            'filter-btn',
-            filterStatus === '未调解' ? 'active' : ''
-          ]"
-        >
-          未调解
-        </button>
-        <button
-          @click="handleFilter('待盯办')"
-          :class="[
-            'filter-btn',
-            filterStatus === '待盯办' ? 'active' : ''
-          ]"
-        >
-          待盯办
-        </button>
-      </div>
+      <div class="list-wrapper">
+        <div class="list-container">
+          <!-- 加载状态 -->
+          <div v-if="loading" class="h-full flex items-center justify-center">
+            <div class="text-xl text-white">数据加载中...</div>
+          </div>
 
-      <div class="list-container">
-        <!-- 加载状态 -->
-        <div v-if="loading" class="h-full flex items-center justify-center">
-          <div class="text-xl text-white">数据加载中...</div>
+          <!-- 错误状态 -->
+          <div v-else-if="error" class="h-full flex items-center justify-center">
+            <div class="text-xl text-red-400">{{ error }}</div>
+          </div>
+
+          <!-- 滚动表格 -->
+          <ScrollTable
+            v-else-if="rawData.length > 0"
+            ref="scrollTableRef"
+            :headers="headers"
+            :data="rawData"
+            :getCellValue="getCellValue"
+            :getRowStyle="getRowStyle"
+            :autoScroll="true"
+            :scrollSpeed="30"
+          />
+
+          <!-- 无数据 -->
+          <div v-else class="h-full flex items-center justify-center">
+            <div class="text-xl text-gray-400">暂无数据</div>
+          </div>
         </div>
 
-        <!-- 错误状态 -->
-        <div v-else-if="error" class="h-full flex items-center justify-center">
-          <div class="text-xl text-red-400">{{ error }}</div>
-        </div>
-
-        <!-- 滚动表格 -->
-        <ScrollTable
-          v-else-if="rawData.length > 0"
-          ref="scrollTableRef"
-          :headers="headers"
-          :data="rawData"
-          :getCellValue="getCellValue"
-          :getRowStyle="getRowStyle"
-          :autoScroll="true"
-          :scrollSpeed="30"
-        />
-
-        <!-- 无数据 -->
-        <div v-else class="h-full flex items-center justify-center">
-          <div class="text-xl text-gray-400">暂无数据</div>
+        <!-- 筛选按钮（底部） -->
+        <div class="filter-controls">
+          <div class="control-group">
+            <div class="control-label">状态筛选</div>
+            <div class="control-buttons">
+              <button
+                @click="handleFilter(null)"
+                :class="['control-btn', { active: filterStatus === null }]"
+              >
+                默认
+              </button>
+              <button
+                @click="handleFilter('未调解')"
+                :class="['control-btn', { active: filterStatus === '未调解' }]"
+              >
+                未调解
+              </button>
+              <button
+                @click="handleFilter('待盯办')"
+                :class="['control-btn', { active: filterStatus === '待盯办' }]"
+              >
+                待盯办
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -171,42 +169,16 @@ onMounted(() => {
 
 .content-wrapper {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0 12px 12px 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
-.filter-bar {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.filter-btn {
-  padding: 0.5rem 1rem;
-  background: rgba(14, 165, 233, 0.2);
-  border: 1px solid rgba(14, 165, 233, 0.3);
-  border-radius: 0.5rem;
-  color: #e5e7eb;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-size: 0.875rem;
-}
-
-.filter-btn:hover {
-  background: rgba(14, 165, 233, 0.3);
-}
-
-.filter-btn.active {
-  background: rgba(14, 165, 233, 0.5);
-  border-color: rgba(14, 165, 233, 0.6);
-  font-weight: 600;
-}
-
-.list-container {
+.list-wrapper {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   background: rgba(6, 24, 70, 0.6);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(14, 165, 233, 0.3);
@@ -214,5 +186,67 @@ onMounted(() => {
   padding: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+}
+
+.list-container {
+  flex: 1;
+  overflow: visible;
+  margin-bottom: 12px;
+  min-height: 0;
+}
+
+/* 底部筛选控制栏 */
+.filter-controls {
+  flex-shrink: 0;
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #C9FFFF;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  padding: 6px 14px;
+  font-size: 15px;
+  color: #94a3b8;
+  background: rgba(30, 58, 138, 0.3);
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.control-btn:hover {
+  background: rgba(30, 58, 138, 0.5);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.control-btn.active {
+  color: #fff;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px #3b82f6;
 }
 </style>

@@ -64,25 +64,48 @@ async def fetch_from_tianditu(address: str, api_key: str) -> Optional[Tuple[Deci
     Returns:
         (longitude, latitude) 或 None
     """
+    # 天地图地理编码API
     url = "http://api.tianditu.gov.cn/geocoder"
-    params = {
-        "ds": json.dumps({"keyWord": address}),
-        "tk": api_key
-    }
+
+    # 添加省市区前缀，限定搜索范围（浙江省舟山市普陀区）
+    full_address = address
+    if not address.startswith("浙江") and not address.startswith("舟山") and not address.startswith("普陀"):
+        full_address = f"浙江省舟山市普陀区{address}"
+
+    # 构建 ds 参数（不要有空格）
+    ds_param = json.dumps({"keyWord": full_address}, ensure_ascii=False, separators=(',', ':'))
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, params=params)
+            # 使用 params 参数让 httpx 自动处理 URL 编码
+            response = await client.get(url, params={
+                "ds": ds_param,
+                "tk": api_key
+            })
+
+            logger.info(f"地理编码请求: {address} -> {full_address}")
+            logger.info(f"请求URL: {response.url}")
             response.raise_for_status()
             data = response.json()
 
-            if data.get("status") == "0" and data.get("location"):
-                location = data["location"]
-                lon = Decimal(str(location["lon"]))
-                lat = Decimal(str(location["lat"]))
-                return (lon, lat)
+            # 检查返回状态
+            # 0：正常返回，101：结果为空，404：出错
+            if data.get("status") == "0":
+                # location 在根级别
+                if data.get("location"):
+                    location = data["location"]
+                    lon = Decimal(str(location["lon"]))
+                    lat = Decimal(str(location["lat"]))
+                    logger.info(f"成功获取坐标: {address} -> ({lon}, {lat})")
+                    return (lon, lat)
+                else:
+                    logger.warning(f"天地图API未返回坐标: {address}")
+                    return None
+            elif data.get("status") == "101":
+                logger.warning(f"天地图API结果为空: {address}")
+                return None
             else:
-                logger.warning(f"天地图API返回错误: {data}")
+                logger.warning(f"天地图API返回错误: status={data.get('status')}, msg={data.get('msg')}")
                 return None
     except Exception as e:
         logger.error(f"调用天地图API失败: {e}")

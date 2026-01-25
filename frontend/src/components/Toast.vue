@@ -62,7 +62,7 @@ defineExpose({ show, hide })
           <div v-else-if="type === 'warning'" class="i-ri-error-warning-fill text-2xl" />
           <div v-else class="i-ri-information-fill text-2xl" />
         </div>
-        <div class="toast-message">{{ message }}</div>
+        <div class="toast-message text-sm">{{ message }}</div>
       </div>
     </div>
   </transition>
@@ -80,7 +80,7 @@ defineExpose({ show, hide })
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   min-width: 200px;
-  max-width: 400px;
+  max-width: 600px;
 }
 
 .toast-content {
@@ -94,7 +94,6 @@ defineExpose({ show, hide })
 }
 
 .toast-message {
-  font-size: 16px;
   font-weight: 500;
   color: #fff;
 }

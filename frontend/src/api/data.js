@@ -64,22 +64,15 @@ export const getDisputes = async (params = {}) => {
 
 /**
  * 获取警情态势数据
- */
-export function getSituationData() {
-  return get('/data/situation')
-}
-
-/**
- * 获取地图标记数据
- * @param {string} alertTypes - 警情类型，逗号分隔，如 "偷盗,诈骗"
  * @param {string} timePeriod - 时间维度（week/month/year）
- * @returns {Promise<Array>}
+ * @param {string} alertTypes - 警情类型，逗号分隔，如 "偷盗,诈骗"
+ * @returns {Promise<Object>}
  */
-export function getMapData(alertTypes = '偷盗,诈骗', timePeriod = 'month') {
-  return get('/data/map-data', {
+export function getSituationData(timePeriod = 'month', alertTypes = '偷盗,诈骗') {
+  return get('/data/situation', {
     params: {
-      alert_types: alertTypes,
-      time_period: timePeriod
+      time_period: timePeriod,
+      alert_types: alertTypes
     }
   })
 }

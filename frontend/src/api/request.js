@@ -45,6 +45,22 @@ export async function request(url, options = {}) {
  * GET 请求
  */
 export function get(url, options = {}) {
+  // 处理查询参数
+  if (options.params) {
+    const params = new URLSearchParams()
+    Object.keys(options.params).forEach(key => {
+      if (options.params[key] !== undefined && options.params[key] !== null) {
+        params.append(key, options.params[key])
+      }
+    })
+    const queryString = params.toString()
+    if (queryString) {
+      url = `${url}?${queryString}`
+    }
+    // 移除 params，避免传递给 fetch
+    delete options.params
+  }
+
   return request(url, {
     ...options,
     method: 'GET',

@@ -4,7 +4,6 @@ from sqlalchemy import func
 from app.models.police_alert import PoliceAlert
 from app.models.call_record import CallRecord
 from app.models.geocoding_cache import GeocodingCache
-from app.models.config import Config
 from app.services import geocoding
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Tuple
@@ -261,16 +260,21 @@ def get_communities_with_stats(db: Session) -> List[Dict]:
     return result
 
 
-def get_situation_data(db: Session, time_period: str = "month") -> Dict[str, Any]:
+async def get_situation_data(
+    db: Session,
+    time_period: str = "month",
+    alert_types: List[str] = None
+) -> Dict[str, Any]:
     """
     获取警情态势页面所有数据
 
     Args:
         db: 数据库会话
         time_period: 时间维度 (week/month/year)
+        alert_types: 地图显示的警情类型列表，默认为 ['偷盗', '诈骗']
 
     Returns:
-        完整的态势数据
+        完整的态势数据（包含地图数据）
     """
     # 警情分类总览
     police_classification = get_police_classification(db, time_period)
@@ -286,8 +290,10 @@ def get_situation_data(db: Session, time_period: str = "month") -> Dict[str, Any
     # 重复报警
     repeat_alarms = get_repeat_alarms(db)
 
-    # 社区坐标
-    communities = get_communities_with_stats(db)
+    # 地图数据（带经纬度）
+    if alert_types is None:
+        alert_types = ['偷盗', '诈骗']
+    map_data = await get_map_data(db, alert_types, time_period)
 
     return {
         'policeClassification': police_classification,
@@ -298,7 +304,7 @@ def get_situation_data(db: Session, time_period: str = "month") -> Dict[str, Any
         'fightCases': fight_cases,
         'gamblingCases': gambling_cases,
         'repeatAlarms': repeat_alarms,
-        'communities': communities
+        'mapData': map_data
     }
 
 
@@ -329,9 +335,8 @@ async def get_map_data(
     """
     current_start, current_end, _, _ = get_time_range(time_period)
 
-    # 获取天地图 API Key
-    config = db.query(Config).filter(Config.key == "tianditu_api_key").first()
-    tianditu_key = config.value if config else ""
+    # 天地图 API Key（写死 - 服务器端）
+    tianditu_key = "6244a8e0c7b2d0632b98bf5a2e4571c6"
 
     # 查询指定类型的警情数据
     results = db.query(

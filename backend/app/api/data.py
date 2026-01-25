@@ -55,41 +55,17 @@ def get_dispute_management(
 
 
 @router.get("/situation", tags=["数据"])
-def get_situation_data(
+async def get_situation_data(
     time_period: str = Query("month", description="时间维度（week/month/year）"),
+    alert_types: Optional[str] = Query("偷盗,诈骗", description="地图显示的警情类型，逗号分隔"),
     db: Session = Depends(get_db)
 ):
-    """获取警情态势页面所需的所有数据（支持时间维度）"""
-    data = situation.get_situation_data(db, time_period)
-
-    return {
-        "code": 200,
-        "data": data
-    }
-
-
-@router.get("/map-data", tags=["数据"])
-async def get_map_data(
-    alert_types: Optional[str] = Query("偷盗,诈骗", description="警情类型，逗号分隔"),
-    time_period: str = Query("month", description="时间维度（week/month/year）"),
-    db: Session = Depends(get_db)
-):
-    """
-    获取地图标记数据（带经纬度）
-
-    Args:
-        alert_types: 警情类型，逗号分隔，如 "偷盗,诈骗"
-        time_period: 时间维度
-        db: 数据库会话
-
-    Returns:
-        地图标记数据列表
-    """
+    """获取警情态势页面所需的所有数据（包含地图数据）"""
     # 解析警情类型
     types_list = [t.strip() for t in alert_types.split(",") if t.strip()]
 
-    # 获取地图数据
-    data = await situation.get_map_data(db, types_list, time_period)
+    # 获取态势数据（包含地图数据）
+    data = await situation.get_situation_data(db, time_period, types_list)
 
     return {
         "code": 200,

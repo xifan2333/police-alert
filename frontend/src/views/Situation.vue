@@ -21,6 +21,14 @@ const availableTypes = [
   { label: '人身伤害', value: '人身伤害', color: '#06b6d4' }
 ]
 
+// 时间周期选择
+const timePeriod = ref('month')
+const timePeriods = [
+  { label: '周', value: 'week' },
+  { label: '月', value: 'month' },
+  { label: '年', value: 'year' }
+]
+
 const policeClassification = ref({
   header: ['名称', '数量', '同比', '环比'],
   data: [],
@@ -186,7 +194,7 @@ const loadMapMarkers = async () => {
 
     // 获取地图数据
     const typesStr = selectedTypes.value.join(',')
-    const res = await getMapData(typesStr, 'month')
+    const res = await getMapData(typesStr, timePeriod.value)
 
     if (res.code === 200 && res.data) {
       mapMarkers.value = res.data
@@ -246,6 +254,13 @@ watch(selectedTypes, () => {
     loadMapMarkers()
   }
 }, { deep: true })
+
+// 监听时间周期变化，重新加载地图
+watch(timePeriod, () => {
+  if (map.value) {
+    loadMapMarkers()
+  }
+})
 
 // 初始化总览图表（警情分类总览）
 const initOverviewChart = () => {
@@ -461,24 +476,41 @@ onMounted(() => {
       <div class="map-box">
         <dv-border-box-13>
           <div class="map-wrapper">
-            <!-- 类型筛选按钮 -->
-            <div class="map-filter">
-              <div class="filter-title">显示类型</div>
-              <div class="filter-buttons">
-                <button
-                  v-for="type in availableTypes"
-                  :key="type.value"
-                  :class="['filter-btn', { active: selectedTypes.includes(type.value) }]"
-                  :style="{ '--type-color': type.color }"
-                  @click="toggleType(type.value)"
-                >
-                  {{ type.label }}
-                </button>
-              </div>
-            </div>
             <!-- 地图容器 -->
             <div class="map-container" id="mapDiv">
               <div class="map-placeholder">天地图区域</div>
+            </div>
+            <!-- 操作栏（底部） -->
+            <div class="map-controls">
+              <!-- 时间周期切换 -->
+              <div class="control-group">
+                <div class="control-label">时间周期</div>
+                <div class="control-buttons">
+                  <button
+                    v-for="period in timePeriods"
+                    :key="period.value"
+                    :class="['control-btn', { active: timePeriod === period.value }]"
+                    @click="timePeriod = period.value"
+                  >
+                    {{ period.label }}
+                  </button>
+                </div>
+              </div>
+              <!-- 类型筛选 -->
+              <div class="control-group">
+                <div class="control-label">显示类型</div>
+                <div class="control-buttons">
+                  <button
+                    v-for="type in availableTypes"
+                    :key="type.value"
+                    :class="['control-btn', { active: selectedTypes.includes(type.value) }]"
+                    :style="{ '--type-color': type.color }"
+                    @click="toggleType(type.value)"
+                  >
+                    {{ type.label }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </dv-border-box-13>
@@ -588,57 +620,83 @@ onMounted(() => {
   padding: 16px;
 }
 
-.map-filter {
-  flex-shrink: 0;
-  margin-bottom: 12px;
-  padding: 12px;
-  background: rgba(14, 165, 233, 0.1);
-  border-radius: 8px;
-  border: 1px solid rgba(14, 165, 233, 0.3);
-}
-
-.filter-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #C9FFFF;
-  margin-bottom: 8px;
-}
-
-.filter-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  padding: 6px 16px;
-  font-size: 16px;
-  color: #94a3b8;
-  background: rgba(30, 58, 138, 0.3);
-  border: 2px solid rgba(148, 163, 184, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-  background: rgba(30, 58, 138, 0.5);
-  border-color: rgba(148, 163, 184, 0.5);
-}
-
-.filter-btn.active {
-  color: #fff;
-  background: var(--type-color);
-  border-color: var(--type-color);
-  box-shadow: 0 0 10px var(--type-color);
-}
-
 .map-container {
   flex: 1;
   width: 100%;
   border-radius: 4px;
   overflow: hidden;
   filter: invert(0.9) hue-rotate(180deg) brightness(0.95) contrast(1.1);
+  margin-bottom: 12px;
+}
+
+.map-container :deep(.tdt-control-copyright) {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 48px;
+}
+
+/* 底部操作栏 */
+.map-controls {
+  flex-shrink: 0;
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #C9FFFF;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  padding: 6px 14px;
+  font-size: 15px;
+  color: #94a3b8;
+  background: rgba(30, 58, 138, 0.3);
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.control-btn:hover {
+  background: rgba(30, 58, 138, 0.5);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.control-btn.active {
+  color: #fff;
+  background: var(--type-color, #3b82f6);
+  border-color: var(--type-color, #3b82f6);
+  box-shadow: 0 0 10px var(--type-color, #3b82f6);
 }
 
 .map-container :deep(.tdt-control-copyright) {

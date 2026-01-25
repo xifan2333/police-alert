@@ -4,6 +4,7 @@ import router from './router'
 import datav from '@kjgl77/datav-vue3'
 import 'virtual:uno.css'
 import '@unocss/reset/tailwind.css'
+import './assets/global.css'
 
 const app = createApp(App)
 app.use(router)

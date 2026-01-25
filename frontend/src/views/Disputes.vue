@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ScrollTable from '@/components/ScrollTable.vue'
+import FloatingButton from '@/components/FloatingButton.vue'
 import { formatDateTime } from '@/utils/datetime'
 
 // 响应式数据
@@ -87,7 +88,7 @@ onMounted(() => {
 
 <template>
   <div class="disputes-page">
-    <PageHeader title="矛盾纠纷闭环管理" />
+    <PageHeader title="矛盾纠纷管理" />
 
     <div class="content-wrapper">
       <!-- 筛选按钮 -->
@@ -150,13 +151,16 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- 悬浮返回按钮 -->
+    <FloatingButton />
   </div>
 </template>
 
 <style scoped>
 .disputes-page {
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background: url(/main-bg-003.jpg) center/cover no-repeat;
   font-family: sans-serif;
   color: #e5e7eb;

@@ -1,34 +1,27 @@
-"""警情记录数据模型"""
-from sqlalchemy import Column, Integer, String, Text, DateTime, CheckConstraint, Index
+"""警情记录数据模型 - 按日期统计"""
+from sqlalchemy import Column, Integer, String, Date, CheckConstraint, Index, UniqueConstraint
 from app.core.database import Base
-from datetime import datetime
+from datetime import date
 
 
 class PoliceAlert(Base):
-    """警情记录表"""
+    """警情记录表 - 按日期统计次数"""
     __tablename__ = "t_police_alert"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    alert_number = Column(String(50), unique=True, nullable=False, index=True)
-    alert_type = Column(String(50), nullable=False)
-    alert_name = Column(String(200), nullable=False)
-    alert_time = Column(DateTime, nullable=False)
-    location_address = Column(Text)  # 地点地址（文本）
-    location_community = Column(String(100))
-    reporter_name = Column(String(100))
-    officer_name = Column(String(50))
-    created_at = Column(DateTime, nullable=False, default=datetime.now)
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    alert_date = Column(Date, nullable=False, index=True, comment="警情日期")
+    alert_type = Column(String(50), nullable=False, index=True, comment="警情类型")
+    location = Column(String(100), nullable=False, index=True, comment="地点")
+    count = Column(Integer, nullable=False, default=1, comment="当日该类型该地点警情次数")
 
     __table_args__ = (
         CheckConstraint(
-            "alert_type IN ('偷盗/传统盗财', '通讯网络诈骗/新型盗财', '涉黄', '涉赌', '纠纷', '人身伤害', '打架斗殴', '其他有效警情')",
+            "alert_type IN ('偷盗', '诈骗', '涉黄', '涉赌', '纠纷', '人身伤害')",
             name="check_alert_type"
         ),
-        Index('idx_alert_type', 'alert_type'),
-        Index('idx_alert_time', 'alert_time'),
-        Index('idx_alert_community', 'location_community'),
+        UniqueConstraint("alert_date", "alert_type", "location", name="uq_police_alert_date_type_location"),
+        Index('idx_date_type_location', 'alert_date', 'alert_type', 'location'),
     )
 
     def __repr__(self):
-        return f"<PoliceAlert(alert_number={self.alert_number}, alert_type={self.alert_type})>"
+        return f"<PoliceAlert(date={self.alert_date}, type={self.alert_type}, location={self.location}, count={self.count})>"

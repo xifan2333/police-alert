@@ -1,3 +1,9 @@
+<script setup>
+import ScaleContainer from '@/components/ScaleContainer.vue'
+</script>
+
 <template>
-  <router-view />
+  <ScaleContainer>
+    <router-view />
+  </ScaleContainer>
 </template>

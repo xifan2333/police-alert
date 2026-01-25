@@ -1,27 +1,22 @@
-"""报警记录数据模型"""
-from sqlalchemy import Column, Integer, String, Text, DateTime, Index
+"""报警记录数据模型 - 按日期统计"""
+from sqlalchemy import Column, Integer, String, Date, Index, UniqueConstraint
 from app.core.database import Base
-from datetime import datetime
+from datetime import date
 
 
 class CallRecord(Base):
-    """报警记录表"""
+    """报警记录表 - 按日期统计重复报警次数"""
     __tablename__ = "t_call_record"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    call_number = Column(String(50), unique=True, nullable=False, index=True)
-    reporter_name = Column(String(100), nullable=False, index=True)
-    reporter_phone = Column(String(20))
-    call_time = Column(DateTime, nullable=False, index=True)
-    call_address = Column(Text)
-    is_valid = Column(Integer, nullable=False, default=1)  # 是否有效（0否/1是）
-    created_at = Column(DateTime, nullable=False, default=datetime.now)
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    call_date = Column(Date, nullable=False, index=True, comment="报警日期")
+    call_address = Column(String(200), nullable=False, index=True, comment="报警地点")
+    count = Column(Integer, nullable=False, default=1, comment="当日该地点报警次数")
 
     __table_args__ = (
-        Index('idx_call_reporter', 'reporter_name'),
-        Index('idx_call_time', 'call_time'),
+        UniqueConstraint("call_date", "call_address", name="uq_call_record_date_address"),
+        Index('idx_date_address', 'call_date', 'call_address'),
     )
 
     def __repr__(self):
-        return f"<CallRecord(call_number={self.call_number}, reporter_name={self.reporter_name})>"
+        return f"<CallRecord(date={self.call_date}, address={self.call_address}, count={self.count})>"

@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
+import FloatingButton from '@/components/FloatingButton.vue'
 import { getSituationData } from '@/api/data'
 
 // 数据状态
@@ -74,26 +75,24 @@ const gamblingCases = ref({
 })
 
 const repeatAlarms = ref({
-  header: ['报警人', '报警次数', '最近报警时间'],
+  header: ['地点', '报警次数', '最近报警时间'],
   data: [],
   rowNum: 5,
   headerBGC: 'rgba(14, 165, 233, 0.2)',
   oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  evenRowBGC: 'rgba(14, 165, 233, 0.1)',
+  columnWidth: [200, 100, 120],
+  align: ['left', 'center', 'center']
 })
 
 // 图表实例
 const overviewChartInstance = ref(null)
 const overviewChartRef = ref(null)
 
-// 7个分类的图表实例
-const categoryChartInstances = ref([])
-const categoryChartRefs = ref([])
-
 // 分类配置
 const categories = [
-  { label: '偷盗/传统盗财', key: 'theft', color: '#ef4444', dataRef: 'theftTraditional' },
-  { label: '电诈/新型盗财', key: 'telecom', color: '#f59e0b', dataRef: 'telecomFraud' },
+  { label: '偷盗', key: 'theft', color: '#ef4444', dataRef: 'theftTraditional' },
+  { label: '诈骗', key: 'telecom', color: '#f59e0b', dataRef: 'telecomFraud' },
   { label: '涉黄案件', key: 'vice', color: '#8b5cf6', dataRef: 'viceCases' },
   { label: '纠纷案件', key: 'dispute', color: '#10b981', dataRef: 'disputeCases' },
   { label: '打架斗殴', key: 'fight', color: '#06b6d4', dataRef: 'fightCases' },
@@ -112,7 +111,8 @@ const getCategoryData = (index) => {
     'gamblingCases': gamblingCases,
     'repeatAlarms': repeatAlarms
   }
-  return dataRefMap[categories[index].dataRef]
+  const dataRef = dataRefMap[categories[index].dataRef]
+  return dataRef ? dataRef.value : {}
 }
 
 // 加载数据
@@ -154,14 +154,23 @@ const initMap = () => {
     map.value = new T.Map('mapDiv')
     map.value.centerAndZoom(new T.LngLat(centerLng, centerLat), 14)
 
-    // 添加标记
+    // 添加标记 - 添加空数据保护
+    if (communities.value.length === 0 || theftTraditional.value.data.length === 0) {
+      console.warn('社区坐标或偷盗数据为空，跳过标记生成')
+      return
+    }
+
     theftTraditional.value.data.forEach((item, index) => {
       const community = communities.value[index % communities.value.length]
+      if (!community || !community.lng || !community.lat) {
+        console.warn('社区坐标数据不完整，跳过该标记')
+        return
+      }
       const marker = new T.Marker(new T.LngLat(community.lng, community.lat))
       map.value.addOverLay(marker)
       const infoWin = new T.InfoWindow(`
         <div style="padding: 10px; min-width: 200px;">
-          <h3 style="margin: 0 0 8px 0; color: #0ea5e9; font-size: 16px;">偷盗/传统盗财</h3>
+          <h3 style="margin: 0 0 8px 0; color: #0ea5e9; font-size: 32px;">偷盗</h3>
           <p style="margin: 4px 0; color: #64748b;">地点: <span style="color: #ef4444; font-weight: bold;">${item[0]}</span></p>
           <p style="margin: 4px 0; color: #64748b;">数量: <span style="color: #f59e0b; font-weight: bold;">${item[1]}</span></p>
         </div>
@@ -173,7 +182,7 @@ const initMap = () => {
   }, 500)
 }
 
-// 初始化总览图表（环比柱状图）
+// 初始化总览图表（警情分类总览）
 const initOverviewChart = () => {
   nextTick(() => {
     if (!overviewChartRef.value) return
@@ -186,18 +195,23 @@ const initOverviewChart = () => {
     overviewChartInstance.value = echarts.init(overviewChartRef.value)
 
     const categories = policeClassification.value.data.map(item => item[0])
-    const values = policeClassification.value.data.map(item => {
+    const quantities = policeClassification.value.data.map(item => item[1])
+    const tongbiValues = policeClassification.value.data.map(item => {
+      const ratio = item[2]
+      return parseFloat(ratio.replace('%', ''))
+    })
+    const huanbiValues = policeClassification.value.data.map(item => {
       const ratio = item[3]
       return parseFloat(ratio.replace('%', ''))
     })
 
     const option = {
       title: {
-        text: '警情分类环比趋势',
+        text: '警情分类总览',
         left: 'center',
         textStyle: {
           color: '#C9FFFF',
-          fontSize: 14,
+          fontSize: 28,
           fontWeight: 600
         }
       },
@@ -208,12 +222,20 @@ const initOverviewChart = () => {
         borderColor: 'rgba(14, 165, 233, 0.5)',
         textStyle: { color: '#C9FFFF' }
       },
+      legend: {
+        data: ['数量', '同比', '环比'],
+        top: '12%',
+        textStyle: {
+          color: '#C9FFFF',
+          fontSize: 16
+        }
+      },
       xAxis: {
         type: 'category',
         data: categories,
         axisLabel: {
-          rotate: 30,
-          fontSize: 10,
+          rotate: 90,
+          fontSize: 16,
           color: '#94a3b8',
           interval: 0
         },
@@ -221,119 +243,18 @@ const initOverviewChart = () => {
           lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
         }
       },
-      yAxis: {
-        type: 'value',
-        name: '环比(%)',
-        nameTextStyle: {
-          color: '#94a3b8',
-          fontSize: 12
-        },
-        axisLabel: {
-          color: '#94a3b8',
-          fontSize: 10,
-          formatter: '{value}%'
-        },
-        axisLine: {
-          lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
-        },
-        splitLine: {
-          lineStyle: { color: 'rgba(14, 165, 233, 0.1)' }
-        }
-      },
-      series: [
+      yAxis: [
         {
-          type: 'bar',
-          data: values,
-          itemStyle: {
-            color: (params) => {
-              return params.value >= 0
-                ? 'rgba(34, 197, 94, 0.8)'
-                : 'rgba(239, 68, 68, 0.8)'
-            },
-            borderRadius: [4, 4, 0, 0]
-          },
-          label: {
-            show: true,
-            position: 'top',
-            formatter: '{c}%',
-            color: '#C9FFFF',
-            fontSize: 10
-          }
-        }
-      ],
-      grid: {
-        left: '15%',
-        right: '5%',
-        top: '20%',
-        bottom: '30%'
-      }
-    }
-
-    overviewChartInstance.value.setOption(option)
-  })
-}
-
-// 初始化详情图表（所有分类）
-const initCategoryCharts = () => {
-  nextTick(() => {
-    categories.forEach((category, index) => {
-      const chartRef = categoryChartRefs.value[index]
-      if (!chartRef) return
-
-      const categoryData = getCategoryData(index)
-      if (!categoryData.value.data || categoryData.value.data.length === 0) return
-
-      // 销毁旧实例
-      if (categoryChartInstances.value[index]) {
-        categoryChartInstances.value[index].dispose()
-      }
-
-      // 创建新实例
-      categoryChartInstances.value[index] = echarts.init(chartRef)
-
-      const labels = categoryData.value.data.map(item => item[0])
-      const values = categoryData.value.data.map(item => item[1])
-
-      const option = {
-        title: {
-          text: category.label,
-          left: 'center',
-          textStyle: {
-            color: '#C9FFFF',
-            fontSize: 14,
-            fontWeight: 600
-          }
-        },
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: { type: 'shadow' },
-          backgroundColor: 'rgba(6, 24, 70, 0.9)',
-          borderColor: 'rgba(14, 165, 233, 0.5)',
-          textStyle: { color: '#C9FFFF' }
-        },
-        xAxis: {
-          type: 'category',
-          data: labels,
-          axisLabel: {
-            rotate: 30,
-            fontSize: 10,
-            color: '#94a3b8',
-            interval: 0
-          },
-          axisLine: {
-            lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
-          }
-        },
-        yAxis: {
           type: 'value',
           name: '数量',
+          position: 'left',
           nameTextStyle: {
             color: '#94a3b8',
-            fontSize: 10
+            fontSize: 18
           },
           axisLabel: {
             color: '#94a3b8',
-            fontSize: 10
+            fontSize: 16
           },
           axisLine: {
             lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
@@ -342,46 +263,101 @@ const initCategoryCharts = () => {
             lineStyle: { color: 'rgba(14, 165, 233, 0.1)' }
           }
         },
-        series: [
-          {
-            type: 'bar',
-            data: values,
-            itemStyle: {
-              color: category.color,
-              borderRadius: [4, 4, 0, 0]
-            },
-            label: {
-              show: true,
-              position: 'top',
-              color: '#C9FFFF',
-              fontSize: 10
-            }
+        {
+          type: 'value',
+          name: '百分比(%)',
+          position: 'right',
+          nameTextStyle: {
+            color: '#94a3b8',
+            fontSize: 18
+          },
+          axisLabel: {
+            color: '#94a3b8',
+            fontSize: 16,
+            formatter: '{value}%'
+          },
+          axisLine: {
+            lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
+          },
+          splitLine: {
+            show: false
           }
-        ],
-        grid: {
-          left: '15%',
-          right: '5%',
-          top: '20%',
-          bottom: '25%'
         }
+      ],
+      series: [
+        {
+          name: '数量',
+          type: 'bar',
+          data: quantities,
+          itemStyle: {
+            color: 'rgba(59, 130, 246, 0.8)',
+            borderRadius: [4, 4, 0, 0]
+          },
+          label: {
+            show: true,
+            position: 'top',
+            color: '#C9FFFF',
+            fontSize: 14
+          }
+        },
+        {
+          name: '同比',
+          type: 'line',
+          yAxisIndex: 1,
+          data: tongbiValues,
+          itemStyle: {
+            color: 'rgba(34, 197, 94, 0.8)'
+          },
+          lineStyle: {
+            width: 2
+          },
+          label: {
+            show: true,
+            formatter: '{c}%',
+            color: '#C9FFFF',
+            fontSize: 12
+          }
+        },
+        {
+          name: '环比',
+          type: 'line',
+          yAxisIndex: 1,
+          data: huanbiValues,
+          itemStyle: {
+            color: 'rgba(251, 146, 60, 0.8)'
+          },
+          lineStyle: {
+            width: 2
+          },
+          label: {
+            show: true,
+            formatter: '{c}%',
+            color: '#C9FFFF',
+            fontSize: 12
+          }
+        }
+      ],
+      grid: {
+        left: '12%',
+        right: '12%',
+        top: '25%',
+        bottom: '25%'
       }
+    }
 
-      categoryChartInstances.value[index].setOption(option)
-    })
+    overviewChartInstance.value.setOption(option)
   })
 }
 
 // 响应式调整
 const handleResize = () => {
   overviewChartInstance.value?.resize()
-  categoryChartInstances.value.forEach(chart => chart?.resize())
 }
 
 onMounted(() => {
   fetchData().then(() => {
     initMap()
     initOverviewChart()
-    initCategoryCharts()
   })
 
   window.addEventListener('resize', handleResize)
@@ -390,18 +366,30 @@ onMounted(() => {
 
 <template>
   <div class="situation-page">
-    <PageHeader title="警情态势监控追踪" />
+    <PageHeader title="警情态势追踪" />
 
-    <!-- 主内容区域 - 上半部分 -->
-    <div class="top-section">
-      <!-- 左侧：警情分类总览表格 -->
-      <div class="overview-table-box">
-        <dv-border-box-12>
-          <div class="table-content">
-            <div class="table-title">警情分类总览</div>
-            <dv-scroll-board :config="policeClassification" />
-          </div>
-        </dv-border-box-12>
+    <!-- 主内容区域 -->
+    <div class="main-section">
+      <!-- 左侧：图表和表格 -->
+      <div class="left-section">
+        <!-- 警情分类总览图表 -->
+        <div class="overview-chart-box">
+          <dv-border-box-12>
+            <div class="chart-content">
+              <div ref="overviewChartRef" class="chart-inner"></div>
+            </div>
+          </dv-border-box-12>
+        </div>
+
+        <!-- 重复报警表格 -->
+        <div class="repeat-alarms-box">
+          <dv-border-box-12>
+            <div class="table-content">
+              <div class="table-title">重复报警</div>
+              <dv-scroll-board :config="repeatAlarms" />
+            </div>
+          </dv-border-box-12>
+        </div>
       </div>
 
       <!-- 中间：天地图 -->
@@ -413,44 +401,36 @@ onMounted(() => {
         </dv-border-box-13>
       </div>
 
-      <!-- 右侧：环比趋势图表 -->
-      <div class="overview-chart-box">
-        <dv-border-box-12>
-          <div class="chart-content">
-            <div ref="overviewChartRef" class="chart-inner"></div>
-          </div>
-        </dv-border-box-12>
+      <!-- 右侧：6个分类详情区域 -->
+      <div class="right-section">
+        <div
+          v-for="(category, index) in categories.slice(0, 6)"
+          :key="category.key"
+          class="category-item"
+        >
+          <dv-border-box-12>
+            <div class="category-content">
+              <!-- 标题 -->
+              <div class="category-title">{{ category.label }}</div>
+              <!-- 表格 -->
+              <div class="category-table">
+                <dv-scroll-board :config="getCategoryData(index)" />
+              </div>
+            </div>
+          </dv-border-box-12>
+        </div>
       </div>
     </div>
 
-    <!-- 下半部分：7个分类详情区域 -->
-    <div class="categories-section">
-      <div
-        v-for="(category, index) in categories"
-        :key="category.key"
-        class="category-item"
-      >
-        <dv-border-box-12>
-          <div class="category-content">
-            <!-- 图表 -->
-            <div class="category-chart">
-              <div :ref="el => categoryChartRefs[index] = el" class="chart-inner"></div>
-            </div>
-            <!-- 表格 -->
-            <div class="category-table">
-              <dv-scroll-board :config="getCategoryData(index).value" />
-            </div>
-          </div>
-        </dv-border-box-12>
-      </div>
-    </div>
+    <!-- 悬浮返回按钮 -->
+    <FloatingButton />
   </div>
 </template>
 
 <style scoped>
 .situation-page {
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background: url(/main-bg-003.jpg) center/cover no-repeat;
   font-family: sans-serif;
   color: #e5e7eb;
@@ -459,18 +439,27 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* 上半部分：总览区域 */
-.top-section {
+/* 主内容区域 */
+.main-section {
+  flex: 1;
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
   gap: 12px;
-  padding: 0 12px;
-  height: 45%;
-  flex-shrink: 0;
+  padding: 0 12px 12px 12px;
+  overflow: hidden;
 }
 
-.overview-table-box,
-.overview-chart-box {
+/* 左侧区域：图表+表格 */
+.left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.overview-chart-box,
+.repeat-alarms-box {
+  flex: 1;
   overflow: hidden;
 }
 
@@ -487,7 +476,7 @@ onMounted(() => {
 }
 
 .table-title {
-  font-size: 16px;
+  font-size: 28px;
   font-weight: 600;
   color: #C9FFFF;
   text-align: center;
@@ -529,17 +518,15 @@ onMounted(() => {
   justify-content: center;
   background: rgba(0, 0, 0, 0.3);
   color: rgba(255, 255, 255, 0.5);
-  font-size: 24px;
+  font-size: 48px;
 }
 
-/* 下半部分：7个分类详情区域 */
-.categories-section {
-  flex: 1;
+/* 右侧区域：6个分类表格 */
+.right-section {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 12px;
-  padding: 12px;
   overflow: hidden;
 }
 
@@ -555,14 +542,18 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   overflow: hidden;
 }
 
-.category-chart {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+.category-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #C9FFFF;
+  text-align: center;
+  padding-bottom: 4px;
+  border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+  flex-shrink: 0;
 }
 
 .category-table {
@@ -574,11 +565,15 @@ onMounted(() => {
 /* 响应式调整 - 针对超大屏幕优化 */
 @media (min-width: 3840px) {
   .table-title {
-    font-size: 20px;
+    font-size: 40px;
+  }
+
+  .category-title {
+    font-size: 28px;
   }
 
   .map-placeholder {
-    font-size: 32px;
+    font-size: 64px;
   }
 }
 </style>

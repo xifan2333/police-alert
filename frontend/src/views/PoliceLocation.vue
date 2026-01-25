@@ -1,13 +1,14 @@
 <script setup>
 import PageHeader from '../components/PageHeader.vue'
+import FloatingButton from '@/components/FloatingButton.vue'
 
 const iframeUrl = 'https://www.azliot.com/home/siteMap'
 </script>
 
 <template>
-  <div class="h-screen w-screen flex flex-col bg-gray-900">
+  <div class="h-full w-full flex flex-col bg-gray-900">
     <!-- 顶部导航栏 -->
-    <PageHeader title="警力效能动态监测" />
+    <PageHeader title="警力动态监测" />
 
     <!-- iframe 内容区域 -->
     <div class="flex-1 relative">
@@ -18,5 +19,8 @@ const iframeUrl = 'https://www.azliot.com/home/siteMap'
         allow="geolocation"
       ></iframe>
     </div>
+
+    <!-- 悬浮返回按钮 -->
+    <FloatingButton />
   </div>
 </template>

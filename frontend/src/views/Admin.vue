@@ -1,30 +1,24 @@
 <script setup>
 import { ref } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
+import FloatingButton from '@/components/FloatingButton.vue'
 
 const activeTab = ref('data-import')
 const uploadFile = ref(null)
 const uploading = ref(false)
 const uploadResult = ref(null)
 
-// 数据类型选项
-const dataTypes = [
-  { value: 'risk_supervision', label: '执法问题风险盯办' },
-  { value: 'dispute_management', label: '矛盾纠纷闭环管理' }
-]
-const selectedDataType = ref('risk_supervision')
-
 // 下载模板
 const downloadTemplate = async () => {
   try {
-    const response = await fetch(`/api/v1/admin/template/${selectedDataType.value}`)
+    const response = await fetch('/api/v1/admin/template')
     if (!response.ok) throw new Error('下载失败')
 
     const blob = await response.blob()
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${dataTypes.find(t => t.value === selectedDataType.value)?.label}_模板.xlsx`
+    a.download = '数据导入模板.xlsx'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -54,7 +48,6 @@ const uploadExcel = async () => {
   try {
     const formData = new FormData()
     formData.append('file', uploadFile.value)
-    formData.append('data_type', selectedDataType.value)
 
     const response = await fetch('/api/v1/admin/import', {
       method: 'POST',
@@ -64,9 +57,16 @@ const uploadExcel = async () => {
     const result = await response.json()
 
     if (result.code === 200) {
+      let message = '导入成功！\n'
+      message += `执法问题盯办: ${result.data.执法问题盯办} 条\n`
+      message += `矛盾纠纷管理: ${result.data.矛盾纠纷管理} 条\n`
+      message += `警情态势追踪: ${result.data.警情态势追踪} 条\n`
+      message += `重复报警记录: ${result.data.重复报警记录} 条\n`
+      message += `总计: ${result.data.总计} 条`
+
       uploadResult.value = {
         success: true,
-        message: `导入成功！共导入 ${result.data.imported_count} 条数据`
+        message: message
       }
       uploadFile.value = null
       // 清空文件选择
@@ -105,8 +105,8 @@ const ruleForm = ref({
 
 // 页面选项
 const pageOptions = [
-  { value: 'risk_supervision', label: '执法问题风险盯办' },
-  { value: 'dispute_management', label: '矛盾纠纷闭环管理' }
+  { value: 'risk_supervision', label: '执法问题盯办' },
+  { value: 'dispute_management', label: '矛盾纠纷管理' }
 ]
 
 // 字段选项（根据页面动态变化）
@@ -332,17 +332,8 @@ const handleTabChange = (tab) => {
         <!-- 数据导入面板 -->
         <div v-if="activeTab === 'data-import'" class="panel">
           <div class="panel-section">
-            <h3 class="section-title">选择数据类型</h3>
-            <select v-model="selectedDataType" class="select-input">
-              <option v-for="type in dataTypes" :key="type.value" :value="type.value">
-                {{ type.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="panel-section">
             <h3 class="section-title">下载模板</h3>
-            <p class="section-desc">下载 Excel 模板，按照模板格式填写数据</p>
+            <p class="section-desc">下载多sheet Excel 模板，包含所有数据类型（执法问题盯办、矛盾纠纷管理、警情态势追踪、重复报警记录）</p>
             <button @click="downloadTemplate" class="btn btn-secondary">
               下载模板
             </button>
@@ -350,7 +341,7 @@ const handleTabChange = (tab) => {
 
           <div class="panel-section">
             <h3 class="section-title">上传数据</h3>
-            <p class="section-desc">选择填写好的 Excel 文件进行导入</p>
+            <p class="section-desc">选择填写好的 Excel 文件进行导入，系统会自动识别并导入所有sheet的数据</p>
             <div class="upload-area">
               <input
                 type="file"
@@ -372,7 +363,7 @@ const handleTabChange = (tab) => {
 
             <!-- 上传结果 -->
             <div v-if="uploadResult" :class="['result-message', uploadResult.success ? 'success' : 'error']">
-              {{ uploadResult.message }}
+              <pre style="white-space: pre-wrap; margin: 0;">{{ uploadResult.message }}</pre>
             </div>
           </div>
         </div>
@@ -530,13 +521,16 @@ const handleTabChange = (tab) => {
         </div>
       </div>
     </div>
+
+    <!-- 悬浮返回按钮 -->
+    <FloatingButton />
   </div>
 </template>
 
 <style scoped>
 .admin-page {
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background: url(/main-bg-003.jpg) center/cover no-repeat;
   font-family: sans-serif;
   color: #e5e7eb;

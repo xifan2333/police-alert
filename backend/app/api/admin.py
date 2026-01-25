@@ -1,245 +1,283 @@
 """管理后台 API"""
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.responses import StreamingResponse
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.services import risk_supervision, dispute_management, display_rule
-from app.models import RiskSupervision, DisputeManagement, DisplayRule, PoliceAlert, CallRecord
+from app.models.police_alert import PoliceAlert
+from app.models.call_record import CallRecord
+from app.models.risk_supervision import RiskSupervision
+from app.models.dispute_management import DisputeManagement
+from app.models.display_rule import DisplayRule
+from app.schemas.display_rule import DisplayRuleCreate, DisplayRuleResponse
 import pandas as pd
+from datetime import datetime, date
+from io import BytesIO
+from typing import List
+from urllib.parse import quote
 import json
-from datetime import datetime
-from typing import Optional
-import os
 
 router = APIRouter(prefix="/admin", tags=["管理后台"])
 
 
-@router.get("/template/{data_type}")
-async def download_template(data_type: str):
+@router.get("/template")
+async def download_template():
     """
-    下载 Excel 模板
+    下载包含所有数据类型的多sheet模板
+    """
+    from openpyxl import Workbook
+    from openpyxl.worksheet.datavalidation import DataValidation
 
-    Args:
-        data_type: 数据类型 (risk_supervision | dispute_management | police_alert | call_record)
-    """
-    templates = {
-        "risk_supervision": {
-            "filename": "执法问题风险盯办_模板.xlsx",
-            "columns": [
-                "案件编号", "案件名称", "案发时间", "案件类型",
-                "风险问题", "整改期限", "责任民警"
-            ]
-        },
-        "dispute_management": {
-            "filename": "矛盾纠纷闭环管理_模板.xlsx",
-            "columns": [
-                "事件名称", "事件类型", "事件内容", "事发时间",
-                "风险等级", "责任民警", "处置进度"
-            ]
-        },
-        "police_alert": {
-            "filename": "警情记录_模板.xlsx",
-            "columns": [
-                "警情编号", "警情类型", "警情名称", "警情时间",
-                "地点地址", "所属社区", "报警人姓名", "责任民警"
-            ]
-        },
-        "call_record": {
-            "filename": "报警记录_模板.xlsx",
-            "columns": [
-                "报警编号", "报��人姓名", "报警人电话", "报警时间",
-                "报警地点", "是否有效"
-            ]
+    # 创建工作簿
+    wb = Workbook()
+    wb.remove(wb.active)  # 删除默认sheet
+
+    # ==================== Sheet 1: 执法问题盯办 ====================
+    ws1 = wb.create_sheet("执法问题盯办")
+    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险问题", "整改期限", "责任民警"])
+
+    # 案件类型下拉
+    dv = DataValidation(
+        type="list",
+        formula1='"刑事,行政,治安"',
+        allow_blank=True
+    )
+    dv.add('E2:E1000')
+    ws1.add_data_validation(dv)
+
+    # 风险问题下拉
+    risk_issues = ["案件笔录未关联", "文书未开具", "调解协议书未上传", "执法音视频未上传",
+                   "涉案物品未出入库", "未结案卷未归档", "治安案件延长审批", "强制措施超期提醒"]
+    dv = DataValidation(
+        type="list",
+        formula1=f'"{",".join(risk_issues)}"',
+        allow_blank=True
+    )
+    dv.add('F2:F1000')
+    ws1.add_data_validation(dv)
+
+    # ==================== Sheet 2: 矛盾纠纷管理 ====================
+    ws2 = wb.create_sheet("矛盾纠纷管理")
+    ws2.append(["序号", "事件名称", "事件类型", "事件内容", "事发时间", "风险等级", "责任民警", "处置进度"])
+
+    # 风险等级下拉
+    dv = DataValidation(
+        type="list",
+        formula1='"高,中,低"',
+        allow_blank=True
+    )
+    dv.add('F2:F1000')
+    ws2.add_data_validation(dv)
+
+    # 处置进度下拉
+    dv = DataValidation(
+        type="list",
+        formula1='"未调解,待盯办,调解中,已调解"',
+        allow_blank=True
+    )
+    dv.add('H2:H1000')
+    ws2.add_data_validation(dv)
+
+    # ==================== Sheet 3: 警情态势追踪（日清表） ====================
+    ws3 = wb.create_sheet("警情态势追踪")
+    ws3.append(["序号", "日期", "警情类型", "地点", "次数"])
+
+    # 警情类型下拉
+    dv = DataValidation(
+        type="list",
+        formula1='"偷盗,诈骗,涉黄,涉赌,纠纷,人身伤害"',
+        allow_blank=True
+    )
+    dv.add('C2:C1000')
+    ws3.add_data_validation(dv)
+
+    # 次数验证
+    dv = DataValidation(
+        type="whole",
+        operator="greaterThanOrEqual",
+        formula1=0,
+        allow_blank=False
+    )
+    dv.add('E2:E1000')
+    ws3.add_data_validation(dv)
+
+    # ==================== Sheet 4: 重复报警记录（日清表） ====================
+    ws4 = wb.create_sheet("重复报警记录")
+    ws4.append(["序号", "日期", "报警地点", "次数"])
+
+    # 次数验证
+    dv = DataValidation(
+        type="whole",
+        operator="greaterThanOrEqual",
+        formula1=0,
+        allow_blank=False
+    )
+    dv.add('D2:D1000')
+    ws4.add_data_validation(dv)
+
+    # 写入内存流
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    # 对中文文件名进行 URL 编码
+    filename = "数据导入模板.xlsx"
+    encoded_filename = quote(filename)
+
+    # 返回流式响应
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
         }
-    }
-
-    if data_type not in templates:
-        raise HTTPException(status_code=400, detail="无效的数据类型")
-
-    template_info = templates[data_type]
-
-    # 创建示例数据
-    df = pd.DataFrame(columns=template_info["columns"])
-
-    # 添加示例行
-    if data_type == "risk_supervision":
-        df.loc[0] = [
-            "330903202401010001",
-            "示例案件",
-            "2026-01-20 10:00",
-            "刑事",
-            "案件笔录未关联,执法音视频未上传",
-            "2026-01-30 18:00",
-            "张三"
-        ]
-    elif data_type == "dispute_management":
-        df.loc[0] = [
-            "东港社区邻里纠纷",
-            "邻里纠纷",
-            "居民张某与李某因楼上漏水问题产生纠纷",
-            "2026-01-20 10:00",
-            "高",
-            "赵六",
-            "未调解"
-        ]
-    elif data_type == "police_alert":
-        df.loc[0] = [
-            "JQ202401230001",
-            "偷盗/传统盗财",
-            "东港小区电动车被盗案",
-            "2026-01-20 08:30",
-            "浙江省舟山市普陀区东港街道东港小区3号楼",
-            "东港社区",
-            "张三",
-            "陈警官"
-        ]
-    elif data_type == "call_record":
-        df.loc[0] = [
-            "BJ202401230001",
-            "张三",
-            "13800138000",
-            "2026-01-20 08:30",
-            "东港小区3号楼",
-            "是"
-        ]
-
-    # 保存到临时文件
-    temp_dir = "temp"
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_file = os.path.join(temp_dir, template_info["filename"])
-
-    df.to_excel(temp_file, index=False, engine='openpyxl')
-
-    return FileResponse(
-        temp_file,
-        filename=template_info["filename"],
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 
 @router.post("/import")
 async def import_data(
     file: UploadFile = File(...),
-    data_type: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """
-    导入 Excel 数据
-
-    Args:
-        file: Excel 文件
-        data_type: 数据类型 (risk_supervision | dispute_management | police_alert | call_record)
+    导入多sheet Excel数据（一次性导入所有数据）
     """
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="只支持 Excel 文件")
 
     try:
-        # 读取 Excel
-        df = pd.read_excel(file.file, engine='openpyxl')
+        # 读取所有sheet
+        excel_file = pd.ExcelFile(file.file, engine='openpyxl')
 
-        imported_count = 0
+        result = {
+            "risk_supervision": 0,
+            "dispute_management": 0,
+            "police_alert": 0,
+            "call_record": 0
+        }
 
-        if data_type == "risk_supervision":
-            # 清空现有数据
-            db.query(RiskSupervision).delete()
+        # ==================== 导入执法问题盯办 ====================
+        if "执法问题盯办" in excel_file.sheet_names:
+            df = pd.read_excel(excel_file, sheet_name="执法问题盯办")
 
-            # 导入新数据
             for _, row in df.iterrows():
-                # 解析风险问题
-                risk_issues = row['风险问题'].split(',') if pd.notna(row['风险问题']) else []
+                if pd.isna(row['案件编号']):  # 跳过空行
+                    continue
 
-                # 解析日期
                 case_time = pd.to_datetime(row['案发时间']) if pd.notna(row['案发时间']) else datetime.now()
                 deadline = pd.to_datetime(row['整改期限']) if pd.notna(row['整改期限']) else datetime.now()
+                risk_issues = str(row['风险问题']) if pd.notna(row['风险问题']) else '[]'
 
-                item = RiskSupervision(
+                stmt = sqlite_insert(RiskSupervision).values(
                     case_number=str(row['案件编号']),
                     case_name=str(row['案件名称']),
                     case_time=case_time,
                     case_type=str(row['案件类型']),
-                    risk_issues=json.dumps(risk_issues, ensure_ascii=False),
+                    risk_issues=risk_issues,
                     deadline=deadline,
-                    officer_name=str(row['责任民警']),
-                    created_at=datetime.now(),
-                    updated_at=datetime.now()
+                    officer_name=str(row['责任民警'])
                 )
-                db.add(item)
-                imported_count += 1
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["case_number"],
+                    set_={
+                        "case_name": stmt.excluded.case_name,
+                        "case_time": stmt.excluded.case_time,
+                        "case_type": stmt.excluded.case_type,
+                        "risk_issues": stmt.excluded.risk_issues,
+                        "deadline": stmt.excluded.deadline,
+                        "officer_name": stmt.excluded.officer_name,
+                        "updated_at": datetime.now()
+                    }
+                )
+                db.execute(stmt)
+                result["risk_supervision"] += 1
 
-        elif data_type == "dispute_management":
-            # 清空现有数据
-            db.query(DisputeManagement).delete()
+        # ==================== 导入矛盾纠纷管理 ====================
+        if "矛盾纠纷管理" in excel_file.sheet_names:
+            df = pd.read_excel(excel_file, sheet_name="矛盾纠纷管理")
 
-            # 导入新数据
             for _, row in df.iterrows():
-                # 解析日期
+                if pd.isna(row['事件名称']):  # 跳过空行
+                    continue
+
                 event_time = pd.to_datetime(row['事发时间']) if pd.notna(row['事发时间']) else datetime.now()
 
-                item = DisputeManagement(
+                stmt = sqlite_insert(DisputeManagement).values(
                     event_name=str(row['事件名称']),
                     event_type=str(row['事件类型']),
                     content=str(row['事件内容']),
                     event_time=event_time,
                     risk_level=str(row['风险等级']),
                     officer_name=str(row['责任民警']),
-                    status=str(row['处置进度']),
-                    created_at=datetime.now(),
-                    updated_at=datetime.now()
+                    status=str(row['处置进度'])
                 )
-                db.add(item)
-                imported_count += 1
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["event_name", "event_time", "officer_name"],
+                    set_={
+                        "event_type": stmt.excluded.event_type,
+                        "content": stmt.excluded.content,
+                        "risk_level": stmt.excluded.risk_level,
+                        "status": stmt.excluded.status,
+                        "updated_at": datetime.now()
+                    }
+                )
+                db.execute(stmt)
+                result["dispute_management"] += 1
 
-        elif data_type == "police_alert":
-            # 清空现有数据
-            db.query(PoliceAlert).delete()
+        # ==================== 导入警情态势追踪 ====================
+        if "警情态势追踪" in excel_file.sheet_names:
+            df = pd.read_excel(excel_file, sheet_name="警情态势追踪")
 
-            # 导入新数据
             for _, row in df.iterrows():
-                # 解析日期
-                alert_time = pd.to_datetime(row['警情时间']) if pd.notna(row['警情时间']) else datetime.now()
+                if pd.isna(row['日期']) or pd.isna(row['警情类型']) or pd.isna(row['地点']):  # 跳过空行
+                    continue
 
-                item = PoliceAlert(
-                    alert_number=str(row['警情编号']),
-                    alert_type=str(row['警情类型']),
-                    alert_name=str(row['警情名称']),
-                    alert_time=alert_time,
-                    location_address=str(row['地点地址']) if pd.notna(row['地点地址']) else None,
-                    location_community=str(row['所属社区']) if pd.notna(row['所属社区']) else None,
-                    reporter_name=str(row['报警人姓名']) if pd.notna(row['报警人姓名']) else None,
-                    officer_name=str(row['责任民警']) if pd.notna(row['责任民警']) else None,
-                    created_at=datetime.now(),
-                    updated_at=datetime.now()
-                )
-                db.add(item)
-                imported_count += 1
+                alert_date = pd.to_datetime(row['日期']).date()
+                count = int(row['次数']) if pd.notna(row['次数']) else 0
 
-        elif data_type == "call_record":
-            # 清空现有数据
-            db.query(CallRecord).delete()
+                # 只导入次数大于0的记录
+                if count > 0:
+                    stmt = sqlite_insert(PoliceAlert).values(
+                        alert_date=alert_date,
+                        alert_type=str(row['警情类型']),
+                        location=str(row['地点']),
+                        count=count
+                    )
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=["alert_date", "alert_type", "location"],
+                        set_={
+                            "count": PoliceAlert.count + stmt.excluded.count
+                        }
+                    )
+                    db.execute(stmt)
+                    result["police_alert"] += 1
 
-            # 导入新数据
+        # ==================== 导入重复报警记录 ====================
+        if "重复报警记录" in excel_file.sheet_names:
+            df = pd.read_excel(excel_file, sheet_name="重复报警记录")
+
             for _, row in df.iterrows():
-                # 解析日期
-                call_time = pd.to_datetime(row['报警时间']) if pd.notna(row['报警时间']) else datetime.now()
+                if pd.isna(row['日期']) or pd.isna(row['报警地点']) or str(row['报警地点']).strip() == '':
+                    continue
 
-                # 解析是否有效
-                is_valid = 1 if str(row['是否有效']) == '是' else 0
+                call_date = pd.to_datetime(row['日期']).date()
+                count = int(row['次数']) if pd.notna(row['次数']) else 0
 
-                item = CallRecord(
-                    call_number=str(row['报警编号']),
-                    reporter_name=str(row['报警人姓名']),
-                    reporter_phone=str(row['报警人电话']) if pd.notna(row['报警人电话']) else None,
-                    call_time=call_time,
-                    call_address=str(row['报警地点']) if pd.notna(row['报警地点']) else None,
-                    is_valid=is_valid,
-                    created_at=datetime.now(),
-                    updated_at=datetime.now()
-                )
-                db.add(item)
-                imported_count += 1
-
-        else:
-            raise HTTPException(status_code=400, detail="无效的数据类型")
+                # 只导入次数大于0的记录
+                if count > 0:
+                    stmt = sqlite_insert(CallRecord).values(
+                        call_date=call_date,
+                        call_address=str(row['报警地点']),
+                        count=count
+                    )
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=["call_date", "call_address"],
+                        set_={
+                            "count": CallRecord.count + stmt.excluded.count
+                        }
+                    )
+                    db.execute(stmt)
+                    result["call_record"] += 1
 
         db.commit()
 
@@ -247,7 +285,11 @@ async def import_data(
             "code": 200,
             "message": "导入成功",
             "data": {
-                "imported_count": imported_count
+                "执法问题盯办": result["risk_supervision"],
+                "矛盾纠纷管理": result["dispute_management"],
+                "警情态势追踪": result["police_alert"],
+                "重复报警记录": result["call_record"],
+                "总计": sum(result.values())
             }
         }
 
@@ -256,103 +298,162 @@ async def import_data(
         raise HTTPException(status_code=500, detail=f"导入失败: {str(e)}")
 
 
-@router.get("/rules")
-async def get_rules(db: Session = Depends(get_db)):
-    """获取所有规则"""
-    rules = db.query(DisplayRule).order_by(DisplayRule.page_code, DisplayRule.priority).all()
+# ==================== 规则管理 API ====================
 
-    result = []
-    for rule in rules:
-        result.append({
-            "id": rule.id,
-            "page_code": rule.page_code,
-            "rule_type": rule.rule_type,
-            "rule_name": rule.rule_name,
-            "rule_config": json.loads(rule.rule_config),
-            "priority": rule.priority,
-            "is_enabled": rule.is_enabled,
-            "description": rule.description
-        })
+@router.get("/rules", response_model=dict)
+async def get_rules(db: Session = Depends(get_db)):
+    """
+    获取所有显示规则
+    """
+    try:
+        rules = db.query(DisplayRule).order_by(DisplayRule.priority.desc()).all()
+
+        # 转换为响应格式
+        rules_data = []
+        for rule in rules:
+            rule_dict = {
+                "id": rule.id,
+                "page_code": rule.page_code,
+                "rule_type": rule.rule_type,
+                "rule_name": rule.rule_name,
+                "description": rule.description,
+                "priority": rule.priority,
+                "is_enabled": rule.is_enabled,
+                "rule_config": json.loads(rule.rule_config) if rule.rule_config else {},
+                "created_at": rule.created_at.isoformat() if rule.created_at else None,
+                "updated_at": rule.updated_at.isoformat() if rule.updated_at else None
+            }
+            rules_data.append(rule_dict)
+
+        return {
+            "code": 200,
+            "message": "success",
+            "data": rules_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取规则失败: {str(e)}")
+
+
+@router.get("/rules/{rule_id}", response_model=dict)
+async def get_rule(rule_id: int, db: Session = Depends(get_db)):
+    """
+    获取单个规则详情
+    """
+    rule = db.query(DisplayRule).filter(DisplayRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="规则不存在")
+
+    rule_dict = {
+        "id": rule.id,
+        "page_code": rule.page_code,
+        "rule_type": rule.rule_type,
+        "rule_name": rule.rule_name,
+        "description": rule.description,
+        "priority": rule.priority,
+        "is_enabled": rule.is_enabled,
+        "rule_config": json.loads(rule.rule_config) if rule.rule_config else {},
+        "created_at": rule.created_at.isoformat() if rule.created_at else None,
+        "updated_at": rule.updated_at.isoformat() if rule.updated_at else None
+    }
 
     return {
         "code": 200,
-        "data": result
+        "message": "success",
+        "data": rule_dict
     }
 
 
-@router.post("/rules")
+@router.post("/rules", response_model=dict)
 async def create_rule(rule_data: dict, db: Session = Depends(get_db)):
-    """创建新规则"""
+    """
+    创建新规则
+    """
     try:
-        rule = DisplayRule(
+        # 将 rule_config 转换为 JSON 字符串
+        rule_config_json = json.dumps(rule_data.get("rule_config", {}), ensure_ascii=False)
+
+        new_rule = DisplayRule(
             page_code=rule_data["page_code"],
-            rule_type=rule_data.get("rule_type", "color"),
+            rule_type=rule_data["rule_type"],
             rule_name=rule_data["rule_name"],
-            rule_config=json.dumps(rule_data["rule_config"], ensure_ascii=False),
+            description=rule_data.get("description", ""),
             priority=rule_data.get("priority", 1),
             is_enabled=rule_data.get("is_enabled", 1),
-            description=rule_data.get("description", "")
+            rule_config=rule_config_json
         )
-        db.add(rule)
+
+        db.add(new_rule)
         db.commit()
-        db.refresh(rule)
+        db.refresh(new_rule)
 
         return {
             "code": 200,
             "message": "创建成功",
-            "data": {"id": rule.id}
+            "data": {
+                "id": new_rule.id
+            }
         }
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"创建失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"创建规则失败: {str(e)}")
 
 
-@router.put("/rules/{rule_id}")
-async def update_rule(
-    rule_id: int,
-    rule_data: dict,
-    db: Session = Depends(get_db)
-):
-    """更新规则"""
+@router.put("/rules/{rule_id}", response_model=dict)
+async def update_rule(rule_id: int, rule_data: dict, db: Session = Depends(get_db)):
+    """
+    更新规则
+    """
     rule = db.query(DisplayRule).filter(DisplayRule.id == rule_id).first()
     if not rule:
         raise HTTPException(status_code=404, detail="规则不存在")
 
-    # 更新字段
-    if "page_code" in rule_data:
-        rule.page_code = rule_data["page_code"]
-    if "rule_type" in rule_data:
-        rule.rule_type = rule_data["rule_type"]
-    if "rule_name" in rule_data:
-        rule.rule_name = rule_data["rule_name"]
-    if "description" in rule_data:
-        rule.description = rule_data["description"]
-    if "is_enabled" in rule_data:
-        rule.is_enabled = rule_data["is_enabled"]
-    if "priority" in rule_data:
-        rule.priority = rule_data["priority"]
-    if "rule_config" in rule_data:
-        rule.rule_config = json.dumps(rule_data["rule_config"], ensure_ascii=False)
+    try:
+        # 更新字段
+        rule.page_code = rule_data.get("page_code", rule.page_code)
+        rule.rule_type = rule_data.get("rule_type", rule.rule_type)
+        rule.rule_name = rule_data.get("rule_name", rule.rule_name)
+        rule.description = rule_data.get("description", rule.description)
+        rule.priority = rule_data.get("priority", rule.priority)
+        rule.is_enabled = rule_data.get("is_enabled", rule.is_enabled)
 
-    db.commit()
+        # 更新 rule_config
+        if "rule_config" in rule_data:
+            rule.rule_config = json.dumps(rule_data["rule_config"], ensure_ascii=False)
 
-    return {
-        "code": 200,
-        "message": "更新成功"
-    }
+        rule.updated_at = datetime.now()
+
+        db.commit()
+
+        return {
+            "code": 200,
+            "message": "更新成功",
+            "data": {
+                "id": rule.id
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"更新规则失败: {str(e)}")
 
 
-@router.delete("/rules/{rule_id}")
+@router.delete("/rules/{rule_id}", response_model=dict)
 async def delete_rule(rule_id: int, db: Session = Depends(get_db)):
-    """删除规则"""
+    """
+    删除规则
+    """
     rule = db.query(DisplayRule).filter(DisplayRule.id == rule_id).first()
     if not rule:
         raise HTTPException(status_code=404, detail="规则不存在")
 
-    db.delete(rule)
-    db.commit()
+    try:
+        db.delete(rule)
+        db.commit()
 
-    return {
-        "code": 200,
-        "message": "删除成功"
-    }
+        return {
+            "code": 200,
+            "message": "删除成功",
+            "data": None
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"删除规则失败: {str(e)}")

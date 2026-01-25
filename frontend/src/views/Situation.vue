@@ -3,10 +3,9 @@ import { ref, onMounted, nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
-import { getSituationData, getMapData } from '@/api/data'
+import { getSituationData } from '@/api/data'
 
 // 数据状态
-const communities = ref([])
 const mapMarkers = ref([])
 const isLoading = ref(true)
 
@@ -139,9 +138,13 @@ const getCategoryData = (index) => {
 const fetchData = async () => {
   try {
     isLoading.value = true
-    const res = await getSituationData()
+    const typesStr = selectedTypes.value.join(',')
+    console.log('开始请求数据:', { timePeriod: timePeriod.value, alertTypes: typesStr })
+    const res = await getSituationData(timePeriod.value, typesStr)
+    console.log('收到响应数据:', res)
 
     policeClassification.value = { ...policeClassification.value, data: res.data.policeClassification }
+    console.log('警情分类数据已更新:', policeClassification.value.data)
     theftTraditional.value = { ...theftTraditional.value, data: res.data.theftTraditional }
     telecomFraud.value = { ...telecomFraud.value, data: res.data.telecomFraud }
     viceCases.value = { ...viceCases.value, data: res.data.viceCases }
@@ -150,7 +153,20 @@ const fetchData = async () => {
     gamblingCases.value = { ...gamblingCases.value, data: res.data.gamblingCases }
     repeatAlarms.value = { ...repeatAlarms.value, data: res.data.repeatAlarms }
 
-    communities.value = res.data.communities || []
+    // 更新地图标记
+    mapMarkers.value = res.data.mapData || []
+    console.log('地图数据更新:', mapMarkers.value.length, '条记录')
+
+    // 如果地图已初始化，更新地图标记
+    if (map.value) {
+      console.log('开始更新地图标记')
+      updateMapMarkers()
+    } else {
+      console.warn('地图未初始化')
+    }
+
+    // 重新渲染图表
+    initOverviewChart()
   } catch (error) {
     console.error('加载数据失败:', error)
   } finally {
@@ -181,48 +197,119 @@ const initMap = () => {
     map.value = new T.Map('mapDiv')
     map.value.centerAndZoom(new T.LngLat(centerLng, centerLat), 14)
 
-    // 加载地图数据
-    loadMapMarkers()
+    // 初始化后更新地图标记
+    updateMapMarkers()
   }, 500)
 }
 
-// 加载地图标记
-const loadMapMarkers = async () => {
-  try {
-    // 清除旧标记
-    clearMapMarkers()
+// 更新地图标记
+const updateMapMarkers = () => {
+  if (!map.value) return
 
-    // 获取地图数据
-    const typesStr = selectedTypes.value.join(',')
-    const res = await getMapData(typesStr, timePeriod.value)
+  // 清除旧标记
+  clearMapMarkers()
 
-    if (res.code === 200 && res.data) {
-      mapMarkers.value = res.data
+  // 按地点合并数据
+  const locationMap = new Map()
+  mapMarkers.value.forEach(item => {
+    if (!item.lng || !item.lat) return
 
-      // 添加标记
-      res.data.forEach(item => {
-        if (!item.lng || !item.lat) return
+    const key = `${item.lng},${item.lat}` // 使用经纬度作为唯一标识
+    if (!locationMap.has(key)) {
+      locationMap.set(key, {
+        location: item.location,
+        lng: item.lng,
+        lat: item.lat,
+        types: []
+      })
+    }
+    locationMap.get(key).types.push({
+      alertType: item.alertType,
+      count: item.count
+    })
+  })
 
-        const marker = new T.Marker(new T.LngLat(item.lng, item.lat))
-        map.value.addOverLay(marker)
-        mapOverlays.value.push(marker)
+  // 收集所有坐标点，用于计算边界
+  const points = []
 
-        const color = getTypeColor(item.alertType)
-        const infoWin = new T.InfoWindow(`
-          <div style="padding: 10px; min-width: 200px;">
-            <h3 style="margin: 0 0 8px 0; color: ${color}; font-size: 32px;">${item.alertType}</h3>
-            <p style="margin: 4px 0; color: #64748b;">地点: <span style="color: #ef4444; font-weight: bold;">${item.location}</span></p>
-            <p style="margin: 4px 0; color: #64748b;">数量: <span style="color: #f59e0b; font-weight: bold;">${item.count}</span></p>
-          </div>
-        `, { offset: new T.Point(0, -30) })
-        marker.addEventListener('click', () => marker.openInfoWindow(infoWin))
+  // 为每个地点创建 Marker + Label
+  locationMap.forEach(data => {
+    const lngLat = new T.LngLat(data.lng, data.lat)
+    points.push(lngLat)
+
+    // 创建 Marker
+    const marker = new T.Marker(lngLat)
+    map.value.addOverLay(marker)
+    mapOverlays.value.push(marker)
+
+    // 构建标注内容（按类型分类显示）
+    let typesText = ''
+    data.types.forEach(type => {
+      typesText += `${type.alertType}: ${type.count}起\n`
+    })
+
+    const totalCount = data.types.reduce((sum, type) => sum + type.count, 0)
+
+    // 创建标注内容
+    const labelContent = `${data.location}\n总计: ${totalCount}起\n${typesText}`
+
+    // 创建 Label
+    const label = new T.Label({
+      text: labelContent,
+      position: lngLat,
+      offset: new T.Point(0, -30) // 向上偏移，避免遮挡 Marker
+    })
+
+    // 设置样式
+    label.setFontSize(14)
+    label.setFontColor('#1e293b')
+    label.setBackgroundColor('#ffffff')
+    label.setBorderLine(2)
+    label.setBorderColor('#3b82f6')
+    label.setOpacity(0.95)
+
+    // 添加到地图
+    map.value.addOverLay(label)
+    mapOverlays.value.push(label)
+
+    // 添加点击事件，提升 z-index
+    const bringToFront = () => {
+      // 重置所有覆盖物的 z-index 为较低值
+      mapOverlays.value.forEach(overlay => {
+        if (typeof overlay.setZindex === 'function') {
+          overlay.setZindex(100)
+        }
       })
 
-      console.log(`地图加载完成，共 ${res.data.length} 个标记`)
+      // 提升当前 marker 和 label 的 z-index
+      if (typeof marker.setZindex === 'function') {
+        marker.setZindex(9999)
+      }
+      if (typeof label.setZindex === 'function') {
+        label.setZindex(9999)
+      }
     }
-  } catch (error) {
-    console.error('加载地图数据失败:', error)
+
+    // 为 marker 和 label 添加点击事件
+    marker.addEventListener('click', bringToFront)
+    label.addEventListener('click', bringToFront)
+  })
+
+  // 自动调整地图视野，让所有标记点都可见
+  if (points.length > 0) {
+    try {
+      const bounds = new T.LngLatBounds()
+      points.forEach(point => {
+        bounds.extend(point)
+      })
+      // 天地图使用 setViewport 方法
+      map.value.setViewport(points)
+    } catch (error) {
+      console.warn('地图视野调整失败:', error)
+    }
   }
+
+  console.log(`地图更新完成，共 ${locationMap.size} 个地点，${mapMarkers.value.length} 条记录`)
 }
 
 // 清除地图标记
@@ -248,41 +335,73 @@ const toggleType = (type) => {
   }
 }
 
-// 监听类型变化，重新加载地图
+// 监听类型变化，重新请求数据
 watch(selectedTypes, () => {
-  if (map.value) {
-    loadMapMarkers()
-  }
+  fetchData()
 }, { deep: true })
 
-// 监听时间周期变化，重新加载地图
-watch(timePeriod, () => {
-  if (map.value) {
-    loadMapMarkers()
-  }
+// 监听时间周期变化，重新请求数据
+watch(timePeriod, (newVal) => {
+  console.log('时间周期变化:', newVal)
+  fetchData()
 })
 
 // 初始化总览图表（警情分类总览）
 const initOverviewChart = () => {
   nextTick(() => {
-    if (!overviewChartRef.value) return
-    if (!policeClassification.value.data || policeClassification.value.data.length === 0) return
-
-    if (overviewChartInstance.value) {
-      overviewChartInstance.value.dispose()
+    if (!overviewChartRef.value) {
+      console.warn('图表容器未找到')
+      return
+    }
+    if (!policeClassification.value.data || policeClassification.value.data.length === 0) {
+      console.warn('图表数据为空')
+      return
     }
 
+    console.log('开始渲染图表，数据:', policeClassification.value.data)
+
+    // 如果图表实例已存在，先销毁
+    if (overviewChartInstance.value) {
+      overviewChartInstance.value.dispose()
+      overviewChartInstance.value = null
+    }
+
+    // 重新初始化图表
     overviewChartInstance.value = echarts.init(overviewChartRef.value)
 
     const categories = policeClassification.value.data.map(item => item[0])
     const quantities = policeClassification.value.data.map(item => item[1])
     const tongbiValues = policeClassification.value.data.map(item => {
       const ratio = item[2]
-      return parseFloat(ratio.replace('%', ''))
+      if (ratio === 'N/A' || !ratio) return 0
+      const value = parseFloat(ratio.replace('%', ''))
+      return isNaN(value) ? 0 : value
     })
     const huanbiValues = policeClassification.value.data.map(item => {
       const ratio = item[3]
-      return parseFloat(ratio.replace('%', ''))
+      if (ratio === 'N/A' || !ratio) return 0
+      const value = parseFloat(ratio.replace('%', ''))
+      return isNaN(value) ? 0 : value
+    })
+
+    console.log('图表数据解析:', { categories, quantities, tongbiValues, huanbiValues })
+
+    // 构建瀑布图数据
+    const waterfallData = []
+    let cumulative = 0
+
+    // 为每个类别创建瀑布图数据
+    categories.forEach((category, index) => {
+      const value = quantities[index]
+      waterfallData.push({
+        name: category,
+        value: value,
+        itemStyle: {
+          color: index === categories.length - 1
+            ? 'rgba(34, 197, 94, 0.8)'  // 总计用绿色
+            : 'rgba(59, 130, 246, 0.8)' // 其他用蓝色
+        }
+      })
     })
 
     const option = {
@@ -300,24 +419,58 @@ const initOverviewChart = () => {
         axisPointer: { type: 'shadow' },
         backgroundColor: 'rgba(6, 24, 70, 0.9)',
         borderColor: 'rgba(14, 165, 233, 0.5)',
-        textStyle: { color: '#C9FFFF' }
+        textStyle: { color: '#C9FFFF' },
+        formatter: function (params) {
+          // params 是一个数组，包含了每个 series 在这个点上的信息
+          const dataIndex = params[0].dataIndex
+          const category = categories[dataIndex]
+          const originalData = policeClassification.value.data[dataIndex]
+          const quantity = originalData[1]
+          const tongbi = originalData[2]
+          const huanbi = originalData[3]
+
+          // 使用 ECharts 提供的 series marker 增加可读性
+          const quantityMarker = params.find(p => p.seriesName === '数量').marker
+          const tongbiMarker = params.find(p => p.seriesName === '同比').marker
+          const huanbiMarker = params.find(p => p.seriesName === '环比').marker
+
+          return `${category}<br/>` +
+                 `${quantityMarker}数量: ${quantity}<br/>` +
+                 `${tongbiMarker}同比: ${tongbi}<br/>` +
+                 `${huanbiMarker}环比: ${huanbi}`
+        }
       },
       legend: {
-        data: ['数量', '同比', '环比'],
+        data: [
+            { name: '数量', icon: 'rect' }, // 为柱状图指定矩形图标
+            { name: '同比' },
+            { name: '环比' }
+        ],
         top: '12%',
         textStyle: {
           color: '#C9FFFF',
           fontSize: 16
         }
       },
+      grid: {
+        left: '5%',
+        right: '5%',
+        top: '25%',
+        bottom: '20%', // 增大底部边距，为竖向标签预留充足空间
+        containLabel: true
+      },
       xAxis: {
         type: 'category',
         data: categories,
         axisLabel: {
-          rotate: 90,
-          fontSize: 16,
+          rotate: 0, // 不旋转
+          interval: 0, // 强制显示所有标签
           color: '#94a3b8',
-          interval: 0
+          fontSize: 14,
+          // formatter 实现文字竖向排列
+          formatter: function (value) {
+            return value.split('').join('\n')
+          }
         },
         axisLine: {
           lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
@@ -325,107 +478,71 @@ const initOverviewChart = () => {
       },
       yAxis: [
         {
+          // Y 轴 0 (左侧): 用于"数量"
           type: 'value',
           name: '数量',
           position: 'left',
-          nameTextStyle: {
-            color: '#94a3b8',
-            fontSize: 18
-          },
-          axisLabel: {
-            color: '#94a3b8',
-            fontSize: 16
-          },
-          axisLine: {
-            lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
-          },
-          splitLine: {
-            lineStyle: { color: 'rgba(14, 165, 233, 0.1)' }
-          }
+          nameTextStyle: { color: '#94a3b8', fontSize: 16 },
+          axisLabel: { color: '#94a3b8', fontSize: 14 },
+          axisLine: { show: true, lineStyle: { color: 'rgba(14, 165, 233, 0.3)' } },
+          splitLine: { lineStyle: { color: 'rgba(14, 165, 233, 0.1)' } }
         },
         {
+          // Y 轴 1 (右侧): 用于"同比"和"环比"
           type: 'value',
-          name: '百分比(%)',
+          name: '百分比',
           position: 'right',
-          nameTextStyle: {
-            color: '#94a3b8',
-            fontSize: 18
-          },
+          nameTextStyle: { color: '#94a3b8', fontSize: 16 },
           axisLabel: {
             color: '#94a3b8',
-            fontSize: 16,
-            formatter: '{value}%'
+            fontSize: 14,
+            formatter: '{value}%' // 自动为标签添加百分号
           },
-          axisLine: {
-            lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
-          },
-          splitLine: {
-            show: false
-          }
+          axisLine: { show: true, lineStyle: { color: 'rgba(14, 165, 233, 0.3)' } },
+          splitLine: { show: false } // 右侧Y轴不显示分割线，保持图表简洁
         }
       ],
       series: [
         {
           name: '数量',
           type: 'bar',
+          yAxisIndex: 0, // 关联到左侧的 Y 轴 (索引为 0)
           data: quantities,
           itemStyle: {
-            color: 'rgba(59, 130, 246, 0.8)',
+            color: '#3b82f6', // 警务蓝
             borderRadius: [4, 4, 0, 0]
           },
           label: {
             show: true,
             position: 'top',
             color: '#C9FFFF',
-            fontSize: 14
+            fontSize: 14,
+            formatter: '{c}' // 仅在柱顶显示数值
           }
         },
         {
           name: '同比',
           type: 'line',
-          yAxisIndex: 1,
+          yAxisIndex: 1, // 关联到右侧的 Y 轴 (索引为 1)
+          smooth: true,
           data: tongbiValues,
-          itemStyle: {
-            color: 'rgba(34, 197, 94, 0.8)'
-          },
-          lineStyle: {
-            width: 2
-          },
-          label: {
-            show: true,
-            formatter: '{c}%',
-            color: '#C9FFFF',
-            fontSize: 12
-          }
+          itemStyle: { color: '#06b6d4' }, // 使用明亮的青色
+          lineStyle: { width: 3 }
         },
         {
           name: '环比',
           type: 'line',
-          yAxisIndex: 1,
+          yAxisIndex: 1, // 关联到右侧的 Y 轴 (索引为 1)
+          smooth: true,
           data: huanbiValues,
-          itemStyle: {
-            color: 'rgba(251, 146, 60, 0.8)'
-          },
-          lineStyle: {
-            width: 2
-          },
-          label: {
-            show: true,
-            formatter: '{c}%',
-            color: '#C9FFFF',
-            fontSize: 12
-          }
+          itemStyle: { color: '#f59e0b' }, // 使用醒目的琥珀色
+          lineStyle: { width: 3 }
         }
-      ],
-      grid: {
-        left: '12%',
-        right: '12%',
-        top: '25%',
-        bottom: '25%'
-      }
+      ]
     }
 
-    overviewChartInstance.value.setOption(option)
+    console.log('设置图表配置，类别:', categories, '数量:', quantities)
+    overviewChartInstance.value.setOption(option, true) // 第二个参数 true 表示不合并，完全替换
   })
 }
 
@@ -482,20 +599,6 @@ onMounted(() => {
             </div>
             <!-- 操作栏（底部） -->
             <div class="map-controls">
-              <!-- 时间周期切换 -->
-              <div class="control-group">
-                <div class="control-label">时间周期</div>
-                <div class="control-buttons">
-                  <button
-                    v-for="period in timePeriods"
-                    :key="period.value"
-                    :class="['control-btn', { active: timePeriod === period.value }]"
-                    @click="timePeriod = period.value"
-                  >
-                    {{ period.label }}
-                  </button>
-                </div>
-              </div>
               <!-- 类型筛选 -->
               <div class="control-group">
                 <div class="control-label">显示类型</div>
@@ -508,6 +611,20 @@ onMounted(() => {
                     @click="toggleType(type.value)"
                   >
                     {{ type.label }}
+                  </button>
+                </div>
+              </div>
+              <!-- 时间周期切换 -->
+              <div class="control-group">
+                <div class="control-label">时间周期</div>
+                <div class="control-buttons">
+                  <button
+                    v-for="period in timePeriods"
+                    :key="period.value"
+                    :class="['control-btn', { active: timePeriod === period.value }]"
+                    @click="timePeriod = period.value"
+                  >
+                    {{ period.label }}
                   </button>
                 </div>
               </div>
@@ -630,7 +747,7 @@ onMounted(() => {
 }
 
 .map-container :deep(.tdt-control-copyright) {
-  filter: invert(1) hue-rotate(180deg);
+  display: none !important;
 }
 
 .map-placeholder {
@@ -700,7 +817,7 @@ onMounted(() => {
 }
 
 .map-container :deep(.tdt-control-copyright) {
-  filter: invert(1) hue-rotate(180deg);
+  display: none !important;
 }
 
 .map-placeholder {

@@ -1,13 +1,25 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
-import { getSituationData } from '@/api/data'
+import { getSituationData, getMapData } from '@/api/data'
 
 // 数据状态
 const communities = ref([])
+const mapMarkers = ref([])
 const isLoading = ref(true)
+
+// 地图类型筛选
+const selectedTypes = ref(['偷盗', '诈骗'])
+const availableTypes = [
+  { label: '偷盗', value: '偷盗', color: '#ef4444' },
+  { label: '诈骗', value: '诈骗', color: '#f59e0b' },
+  { label: '涉黄', value: '涉黄', color: '#8b5cf6' },
+  { label: '涉赌', value: '涉赌', color: '#ec4899' },
+  { label: '纠纷', value: '纠纷', color: '#10b981' },
+  { label: '人身伤害', value: '人身伤害', color: '#06b6d4' }
+]
 
 const policeClassification = ref({
   header: ['名称', '数量', '同比', '环比'],
@@ -139,6 +151,13 @@ const fetchData = async () => {
 }
 
 const map = ref(null)
+const mapOverlays = ref([])
+
+// 获取类型颜色
+const getTypeColor = (alertType) => {
+  const type = availableTypes.find(t => t.value === alertType)
+  return type ? type.color : '#3b82f6'
+}
 
 // 初始化天地图
 const initMap = () => {
@@ -154,33 +173,79 @@ const initMap = () => {
     map.value = new T.Map('mapDiv')
     map.value.centerAndZoom(new T.LngLat(centerLng, centerLat), 14)
 
-    // 添加标记 - 添加空数据保护
-    if (communities.value.length === 0 || theftTraditional.value.data.length === 0) {
-      console.warn('社区坐标或偷盗数据为空，跳过标记生成')
-      return
-    }
-
-    theftTraditional.value.data.forEach((item, index) => {
-      const community = communities.value[index % communities.value.length]
-      if (!community || !community.lng || !community.lat) {
-        console.warn('社区坐标数据不完整，跳过该标记')
-        return
-      }
-      const marker = new T.Marker(new T.LngLat(community.lng, community.lat))
-      map.value.addOverLay(marker)
-      const infoWin = new T.InfoWindow(`
-        <div style="padding: 10px; min-width: 200px;">
-          <h3 style="margin: 0 0 8px 0; color: #0ea5e9; font-size: 32px;">偷盗</h3>
-          <p style="margin: 4px 0; color: #64748b;">地点: <span style="color: #ef4444; font-weight: bold;">${item[0]}</span></p>
-          <p style="margin: 4px 0; color: #64748b;">数量: <span style="color: #f59e0b; font-weight: bold;">${item[1]}</span></p>
-        </div>
-      `, { offset: new T.Point(0, -30) })
-      marker.addEventListener('click', () => marker.openInfoWindow(infoWin))
-    })
-
-    console.log('天地图初始化完成')
+    // 加载地图数据
+    loadMapMarkers()
   }, 500)
 }
+
+// 加载地图标记
+const loadMapMarkers = async () => {
+  try {
+    // 清除旧标记
+    clearMapMarkers()
+
+    // 获取地图数据
+    const typesStr = selectedTypes.value.join(',')
+    const res = await getMapData(typesStr, 'month')
+
+    if (res.code === 200 && res.data) {
+      mapMarkers.value = res.data
+
+      // 添加标记
+      res.data.forEach(item => {
+        if (!item.lng || !item.lat) return
+
+        const marker = new T.Marker(new T.LngLat(item.lng, item.lat))
+        map.value.addOverLay(marker)
+        mapOverlays.value.push(marker)
+
+        const color = getTypeColor(item.alertType)
+        const infoWin = new T.InfoWindow(`
+          <div style="padding: 10px; min-width: 200px;">
+            <h3 style="margin: 0 0 8px 0; color: ${color}; font-size: 32px;">${item.alertType}</h3>
+            <p style="margin: 4px 0; color: #64748b;">地点: <span style="color: #ef4444; font-weight: bold;">${item.location}</span></p>
+            <p style="margin: 4px 0; color: #64748b;">数量: <span style="color: #f59e0b; font-weight: bold;">${item.count}</span></p>
+          </div>
+        `, { offset: new T.Point(0, -30) })
+        marker.addEventListener('click', () => marker.openInfoWindow(infoWin))
+      })
+
+      console.log(`地图加载完成，共 ${res.data.length} 个标记`)
+    }
+  } catch (error) {
+    console.error('加载地图数据失败:', error)
+  }
+}
+
+// 清除地图标记
+const clearMapMarkers = () => {
+  if (map.value && mapOverlays.value.length > 0) {
+    mapOverlays.value.forEach(overlay => {
+      map.value.removeOverLay(overlay)
+    })
+    mapOverlays.value = []
+  }
+}
+
+// 切换类型选择
+const toggleType = (type) => {
+  const index = selectedTypes.value.indexOf(type)
+  if (index > -1) {
+    // 至少保留一个类型
+    if (selectedTypes.value.length > 1) {
+      selectedTypes.value.splice(index, 1)
+    }
+  } else {
+    selectedTypes.value.push(type)
+  }
+}
+
+// 监听类型变化，重新加载地图
+watch(selectedTypes, () => {
+  if (map.value) {
+    loadMapMarkers()
+  }
+}, { deep: true })
 
 // 初始化总览图表（警情分类总览）
 const initOverviewChart = () => {
@@ -395,8 +460,26 @@ onMounted(() => {
       <!-- 中间：天地图 -->
       <div class="map-box">
         <dv-border-box-13>
-          <div class="map-container" id="mapDiv">
-            <div class="map-placeholder">天地图区域</div>
+          <div class="map-wrapper">
+            <!-- 类型筛选按钮 -->
+            <div class="map-filter">
+              <div class="filter-title">显示类型</div>
+              <div class="filter-buttons">
+                <button
+                  v-for="type in availableTypes"
+                  :key="type.value"
+                  :class="['filter-btn', { active: selectedTypes.includes(type.value) }]"
+                  :style="{ '--type-color': type.color }"
+                  @click="toggleType(type.value)"
+                >
+                  {{ type.label }}
+                </button>
+              </div>
+            </div>
+            <!-- 地图容器 -->
+            <div class="map-container" id="mapDiv">
+              <div class="map-placeholder">天地图区域</div>
+            </div>
           </div>
         </dv-border-box-13>
       </div>
@@ -495,15 +578,67 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.map-container {
+.map-wrapper {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(6, 24, 70, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 16px;
+}
+
+.map-filter {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.filter-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #C9FFFF;
+  margin-bottom: 8px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 6px 16px;
+  font-size: 16px;
+  color: #94a3b8;
+  background: rgba(30, 58, 138, 0.3);
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  background: rgba(30, 58, 138, 0.5);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.filter-btn.active {
+  color: #fff;
+  background: var(--type-color);
+  border-color: var(--type-color);
+  box-shadow: 0 0 10px var(--type-color);
+}
+
+.map-container {
+  flex: 1;
+  width: 100%;
   border-radius: 4px;
   overflow: hidden;
   filter: invert(0.9) hue-rotate(180deg) brightness(0.95) contrast(1.1);
-  padding: 16px;
-  background: rgba(6, 24, 70, 0.6);
-  backdrop-filter: blur(10px);
 }
 
 .map-container :deep(.tdt-control-copyright) {

@@ -66,3 +66,32 @@ def get_situation_data(
         "code": 200,
         "data": data
     }
+
+
+@router.get("/map-data", tags=["数据"])
+async def get_map_data(
+    alert_types: Optional[str] = Query("偷盗,诈骗", description="警情类型，逗号分隔"),
+    time_period: str = Query("month", description="时间维度（week/month/year）"),
+    db: Session = Depends(get_db)
+):
+    """
+    获取地图标记数据（带经纬度）
+
+    Args:
+        alert_types: 警情类型，逗号分隔，如 "偷盗,诈骗"
+        time_period: 时间维度
+        db: 数据库会话
+
+    Returns:
+        地图标记数据列表
+    """
+    # 解析警情类型
+    types_list = [t.strip() for t in alert_types.split(",") if t.strip()]
+
+    # 获取地图数据
+    data = await situation.get_map_data(db, types_list, time_period)
+
+    return {
+        "code": 200,
+        "data": data
+    }

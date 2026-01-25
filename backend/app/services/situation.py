@@ -4,6 +4,8 @@ from sqlalchemy import func
 from app.models.police_alert import PoliceAlert
 from app.models.call_record import CallRecord
 from app.models.geocoding_cache import GeocodingCache
+from app.models.config import Config
+from app.services import geocoding
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Tuple
 
@@ -298,3 +300,71 @@ def get_situation_data(db: Session, time_period: str = "month") -> Dict[str, Any
         'repeatAlarms': repeat_alarms,
         'communities': communities
     }
+
+
+async def get_map_data(
+    db: Session,
+    alert_types: List[str],
+    time_period: str = "month"
+) -> List[Dict[str, Any]]:
+    """
+    获取地图标记数据（带经纬度和缓存逻辑）
+
+    Args:
+        db: 数据库会话
+        alert_types: 警情类型列表，如 ['偷盗', '诈骗']
+        time_period: 时间维度
+
+    Returns:
+        [
+            {
+                'location': '地点名称',
+                'alertType': '警情类型',
+                'count': 数量,
+                'lng': 经度,
+                'lat': 纬度
+            },
+            ...
+        ]
+    """
+    current_start, current_end, _, _ = get_time_range(time_period)
+
+    # 获取天地图 API Key
+    config = db.query(Config).filter(Config.key == "tianditu_api_key").first()
+    tianditu_key = config.value if config else ""
+
+    # 查询指定类型的警情数据
+    results = db.query(
+        PoliceAlert.location,
+        PoliceAlert.alert_type,
+        func.sum(PoliceAlert.count).label('count')
+    ).filter(
+        PoliceAlert.alert_type.in_(alert_types),
+        PoliceAlert.alert_date >= current_start.date(),
+        PoliceAlert.alert_date <= current_end.date()
+    ).group_by(
+        PoliceAlert.location,
+        PoliceAlert.alert_type
+    ).all()
+
+    # 处理每个地点，获取经纬度
+    map_data = []
+    for location, alert_type, count in results:
+        # 先从缓存查询
+        coords = geocoding.get_coordinates(db, location)
+
+        # 如果缓存中没有，调用天地图 API
+        if not coords and tianditu_key:
+            coords = await geocoding.get_coordinates_with_api(db, location, tianditu_key)
+
+        # 如果有坐标，添加到结果中
+        if coords:
+            map_data.append({
+                'location': location,
+                'alertType': alert_type,
+                'count': int(count),
+                'lng': float(coords[0]),
+                'lat': float(coords[1])
+            })
+
+    return map_data

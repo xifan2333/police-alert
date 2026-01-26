@@ -4,6 +4,7 @@ import * as echarts from 'echarts'
 import PageHeader from '@/components/PageHeader.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
 import { getSituationData } from '@/api/data'
+import { applyDataVStyles } from '@/utils/styleApplicator'
 
 // 数据状态
 const mapMarkers = ref([])
@@ -143,15 +144,39 @@ const fetchData = async () => {
     const res = await getSituationData(timePeriod.value, typesStr)
     console.log('收到响应数据:', res)
 
-    policeClassification.value = { ...policeClassification.value, data: res.data.policeClassification }
-    console.log('警情分类数据已更新:', policeClassification.value.data)
-    theftTraditional.value = { ...theftTraditional.value, data: res.data.theftTraditional }
-    telecomFraud.value = { ...telecomFraud.value, data: res.data.telecomFraud }
-    viceCases.value = { ...viceCases.value, data: res.data.viceCases }
-    disputeCases.value = { ...disputeCases.value, data: res.data.disputeCases }
-    fightCases.value = { ...fightCases.value, data: res.data.fightCases }
-    gamblingCases.value = { ...gamblingCases.value, data: res.data.gamblingCases }
-    repeatAlarms.value = { ...repeatAlarms.value, data: res.data.repeatAlarms }
+    // 表格数据引用映射
+    const dataRefMap = {
+      policeClassification,
+      theftTraditional,
+      telecomFraud,
+      viceCases,
+      disputeCases,
+      fightCases,
+      gamblingCases,
+      repeatAlarms
+    }
+
+    // 统一处理所有表格：应用显示规则
+    const displayRules = res.data.displayRules || {}
+
+    for (const tableCode in dataRefMap) {
+      const tableRef = dataRefMap[tableCode]
+      const tableData = res.data[tableCode]
+      const tableRules = displayRules[tableCode] || []
+
+      if (tableData && tableRef.value) {
+        // 使用通用函数应用样式
+        const styledData = applyDataVStyles(
+          tableData,
+          tableRules,
+          tableRef.value.header
+        )
+
+        // 更新表格数据
+        tableRef.value = { ...tableRef.value, data: styledData }
+        console.log(`${tableCode} 数据已更新，应用了 ${tableRules.length} 条规则`)
+      }
+    }
 
     // 更新地图标记
     mapMarkers.value = res.data.mapData || []
@@ -369,16 +394,28 @@ const initOverviewChart = () => {
     // 重新初始化图表
     overviewChartInstance.value = echarts.init(overviewChartRef.value)
 
-    const categories = policeClassification.value.data.map(item => item[0])
-    const quantities = policeClassification.value.data.map(item => item[1])
+    // 从 HTML 标签中提取原始数据
+    const extractText = (html) => {
+      if (typeof html === 'string' && html.includes('<span')) {
+        const match = html.match(/>([^<]+)</)
+        return match ? match[1] : html
+      }
+      return html
+    }
+
+    const categories = policeClassification.value.data.map(item => extractText(item[0]))
+    const quantities = policeClassification.value.data.map(item => {
+      const text = extractText(item[1])
+      return typeof text === 'number' ? text : parseInt(text) || 0
+    })
     const tongbiValues = policeClassification.value.data.map(item => {
-      const ratio = item[2]
+      const ratio = extractText(item[2])
       if (ratio === 'N/A' || !ratio) return 0
       const value = parseFloat(ratio.replace('%', ''))
       return isNaN(value) ? 0 : value
     })
     const huanbiValues = policeClassification.value.data.map(item => {
-      const ratio = item[3]
+      const ratio = extractText(item[3])
       if (ratio === 'N/A' || !ratio) return 0
       const value = parseFloat(ratio.replace('%', ''))
       return isNaN(value) ? 0 : value
@@ -386,22 +423,18 @@ const initOverviewChart = () => {
 
     console.log('图表数据解析:', { categories, quantities, tongbiValues, huanbiValues })
 
-    // 构建瀑布图数据
-    const waterfallData = []
-    let cumulative = 0
-
-    // 为每个类别创建瀑布图数据
-    categories.forEach((category, index) => {
-      const value = quantities[index]
-      waterfallData.push({
-        name: category,
-        value: value,
-        itemStyle: {
-          color: index === categories.length - 1
-            ? 'rgba(34, 197, 94, 0.8)'  // 总计用绿色
-            : 'rgba(59, 130, 246, 0.8)' // 其他用蓝色
-        }
-      })
+    // 图表使用前端默认配色方案（不应用后端规则）
+    const defaultColors = [
+      'rgba(239, 68, 68, 0.8)',   // 偷盗 - 红色
+      'rgba(245, 158, 11, 0.8)',  // 诈骗 - 橙色
+      'rgba(139, 92, 246, 0.8)',  // 涉黄 - 紫色
+      'rgba(236, 72, 153, 0.8)',  // 涉赌 - 粉色
+      'rgba(16, 185, 129, 0.8)',  // 纠纷 - 绿色
+      'rgba(6, 182, 212, 0.8)',   // 人身伤害 - 青色
+      'rgba(34, 197, 94, 0.9)'    // 有效警情（总计）- 亮绿色
+    ]
+    const barColors = quantities.map((_, index) => {
+      return defaultColors[index] || 'rgba(59, 130, 246, 0.8)'
     })
 
     const option = {
@@ -425,9 +458,9 @@ const initOverviewChart = () => {
           const dataIndex = params[0].dataIndex
           const category = categories[dataIndex]
           const originalData = policeClassification.value.data[dataIndex]
-          const quantity = originalData[1]
-          const tongbi = originalData[2]
-          const huanbi = originalData[3]
+          const quantity = extractText(originalData[1])
+          const tongbi = extractText(originalData[2])
+          const huanbi = extractText(originalData[3])
 
           // 使用 ECharts 提供的 series marker 增加可读性
           const quantityMarker = params.find(p => p.seriesName === '数量').marker
@@ -507,11 +540,13 @@ const initOverviewChart = () => {
           name: '数量',
           type: 'bar',
           yAxisIndex: 0, // 关联到左侧的 Y 轴 (索引为 0)
-          data: quantities,
-          itemStyle: {
-            color: '#3b82f6', // 警务蓝
-            borderRadius: [4, 4, 0, 0]
-          },
+          data: quantities.map((value, index) => ({
+            value: value,
+            itemStyle: {
+              color: barColors[index],
+              borderRadius: [4, 4, 0, 0]
+            }
+          })),
           label: {
             show: true,
             position: 'top',

@@ -36,6 +36,7 @@ def init_display_rules(db):
         # 执法问题盯办 - 整改期限颜色规则
         DisplayRule(
             page_code="risk_supervision",
+            table_code=None,  # 页面级规则
             rule_type="color",
             rule_name="整改期限颜色规则",
             rule_config=json.dumps({
@@ -60,6 +61,7 @@ def init_display_rules(db):
         # 矛盾纠纷管理 - 风险等级颜色规则
         DisplayRule(
             page_code="dispute_management",
+            table_code=None,  # 页面级规则
             rule_type="color",
             rule_name="风险等级颜色规则",
             rule_config=json.dumps({
@@ -85,6 +87,106 @@ def init_display_rules(db):
             priority=1,
             is_enabled=1,
             description="根据风险等级设置颜色：高-红色，中-黄色，低-绿色"
+        ),
+        # 警情态势 - 警情分类总览 - 数量高亮
+        DisplayRule(
+            page_code="situation",
+            table_code="policeClassification",
+            rule_type="color",
+            rule_name="警情数量高亮",
+            rule_config=json.dumps({
+                "field": "数量",
+                "conditions": [
+                    {
+                        "operator": ">=",
+                        "value": 50,
+                        "font_color": "#f5222d"
+                    },
+                    {
+                        "operator": ">=",
+                        "value": 30,
+                        "font_color": "#faad14"
+                    }
+                ]
+            }, ensure_ascii=False),
+            priority=1,
+            is_enabled=1,
+            description="警情数量≥50红色，≥30黄色"
+        ),
+        # 警情态势 - 偷盗地点 - 数量高亮
+        DisplayRule(
+            page_code="situation",
+            table_code="theftTraditional",
+            rule_type="color",
+            rule_name="偷盗数量高亮",
+            rule_config=json.dumps({
+                "field": "数量",
+                "conditions": [
+                    {
+                        "operator": ">=",
+                        "value": 10,
+                        "font_color": "#f5222d"
+                    },
+                    {
+                        "operator": ">=",
+                        "value": 5,
+                        "font_color": "#faad14"
+                    }
+                ]
+            }, ensure_ascii=False),
+            priority=1,
+            is_enabled=1,
+            description="偷盗数量≥10红色，≥5黄色"
+        ),
+        # 警情态势 - 诈骗小区 - 数量高亮
+        DisplayRule(
+            page_code="situation",
+            table_code="telecomFraud",
+            rule_type="color",
+            rule_name="诈骗数量高亮",
+            rule_config=json.dumps({
+                "field": "数量",
+                "conditions": [
+                    {
+                        "operator": ">=",
+                        "value": 8,
+                        "font_color": "#f5222d"
+                    },
+                    {
+                        "operator": ">=",
+                        "value": 4,
+                        "font_color": "#faad14"
+                    }
+                ]
+            }, ensure_ascii=False),
+            priority=1,
+            is_enabled=1,
+            description="诈骗数量≥8红色，≥4黄色"
+        ),
+        # 警情态势 - 重复报警 - 次数高亮
+        DisplayRule(
+            page_code="situation",
+            table_code="repeatAlarms",
+            rule_type="color",
+            rule_name="重复报警次数高亮",
+            rule_config=json.dumps({
+                "field": "报警次数",
+                "conditions": [
+                    {
+                        "operator": ">=",
+                        "value": 5,
+                        "font_color": "#f5222d"
+                    },
+                    {
+                        "operator": ">=",
+                        "value": 3,
+                        "font_color": "#faad14"
+                    }
+                ]
+            }, ensure_ascii=False),
+            priority=1,
+            is_enabled=1,
+            description="报警次数≥5红色，≥3黄色"
         )
     ]
 

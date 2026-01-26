@@ -95,6 +95,7 @@ const showRuleDialog = ref(false)
 // 规则表单
 const ruleForm = ref({
   page_code: '',
+  table_code: '',
   rule_name: '',
   description: '',
   priority: 1,
@@ -106,8 +107,23 @@ const ruleForm = ref({
 // 页面选项
 const pageOptions = [
   { value: 'risk_supervision', label: '执法问题盯办' },
-  { value: 'dispute_management', label: '矛盾纠纷管理' }
+  { value: 'dispute_management', label: '矛盾纠纷管理' },
+  { value: 'situation', label: '警情态势追踪' }
 ]
+
+// 表格选项（仅 situation 页面需要）
+const tableOptions = {
+  situation: [
+    { value: 'policeClassification', label: '警情分类总览' },
+    { value: 'theftTraditional', label: '偷盗地点分布' },
+    { value: 'telecomFraud', label: '诈骗小区分布' },
+    { value: 'viceCases', label: '涉黄小区分布' },
+    { value: 'disputeCases', label: '纠纷社区分布' },
+    { value: 'fightCases', label: '人身伤害区域分布' },
+    { value: 'gamblingCases', label: '涉赌地点分布' },
+    { value: 'repeatAlarms', label: '重复报警记录' }
+  ]
+}
 
 // 字段选项（根据页面动态变化）
 const fieldOptions = {
@@ -118,6 +134,17 @@ const fieldOptions = {
   dispute_management: [
     { value: 'risk_level', label: '风险等级' },
     { value: 'status', label: '处置进度' }
+  ],
+  situation: [
+    { value: '名称', label: '名称' },
+    { value: '数量', label: '数量' },
+    { value: '同比', label: '同比' },
+    { value: '环比', label: '环比' },
+    { value: '地点', label: '地点' },
+    { value: '小区', label: '小区' },
+    { value: '社区', label: '社区' },
+    { value: '区域', label: '区域' },
+    { value: '报警次数', label: '报警次数' }
   ]
 }
 
@@ -150,6 +177,7 @@ const createRule = () => {
   editingRule.value = null
   ruleForm.value = {
     page_code: 'risk_supervision',
+    table_code: '',
     rule_name: '',
     description: '',
     priority: 1,
@@ -166,6 +194,7 @@ const editRule = (rule) => {
   const config = rule.rule_config
   ruleForm.value = {
     page_code: rule.page_code,
+    table_code: rule.table_code || '',
     rule_name: rule.rule_name,
     description: rule.description,
     priority: rule.priority,
@@ -214,6 +243,7 @@ const saveRule = async () => {
 
     const payload = {
       page_code: ruleForm.value.page_code,
+      table_code: ruleForm.value.table_code || null,
       rule_type: 'color',
       rule_name: ruleForm.value.rule_name,
       description: ruleForm.value.description,
@@ -390,6 +420,7 @@ const handleTabChange = (tab) => {
                   <div class="rule-name">{{ rule.rule_name }}</div>
                   <div class="rule-meta">
                     <span class="rule-page">{{ rule.page_code }}</span>
+                    <span v-if="rule.table_code" class="rule-table">{{ rule.table_code }}</span>
                     <span class="rule-type">{{ rule.rule_type }}</span>
                     <span class="rule-priority">优先级: {{ rule.priority }}</span>
                   </div>
@@ -428,6 +459,16 @@ const handleTabChange = (tab) => {
               <select v-model="ruleForm.page_code" class="form-input">
                 <option v-for="page in pageOptions" :key="page.value" :value="page.value">
                   {{ page.label }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="ruleForm.page_code === 'situation'" class="form-group">
+              <label>应用表格（仅警情态势）</label>
+              <select v-model="ruleForm.table_code" class="form-input">
+                <option value="">全部表格</option>
+                <option v-for="table in tableOptions.situation" :key="table.value" :value="table.value">
+                  {{ table.label }}
                 </option>
               </select>
             </div>
@@ -736,6 +777,15 @@ const handleTabChange = (tab) => {
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   color: #9ca3af;
+}
+
+.rule-page,
+.rule-table,
+.rule-type,
+.rule-priority {
+  padding: 0.25rem 0.5rem;
+  background: rgba(14, 165, 233, 0.2);
+  border-radius: 4px;
 }
 
 .rule-desc {

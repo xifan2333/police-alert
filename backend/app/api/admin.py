@@ -314,6 +314,7 @@ async def get_rules(db: Session = Depends(get_db)):
             rule_dict = {
                 "id": rule.id,
                 "page_code": rule.page_code,
+                "table_code": rule.table_code,
                 "rule_type": rule.rule_type,
                 "rule_name": rule.rule_name,
                 "description": rule.description,
@@ -346,6 +347,7 @@ async def get_rule(rule_id: int, db: Session = Depends(get_db)):
     rule_dict = {
         "id": rule.id,
         "page_code": rule.page_code,
+        "table_code": rule.table_code,
         "rule_type": rule.rule_type,
         "rule_name": rule.rule_name,
         "description": rule.description,
@@ -374,6 +376,7 @@ async def create_rule(rule_data: dict, db: Session = Depends(get_db)):
 
         new_rule = DisplayRule(
             page_code=rule_data["page_code"],
+            table_code=rule_data.get("table_code"),
             rule_type=rule_data["rule_type"],
             rule_name=rule_data["rule_name"],
             description=rule_data.get("description", ""),
@@ -410,6 +413,7 @@ async def update_rule(rule_id: int, rule_data: dict, db: Session = Depends(get_d
     try:
         # 更新字段
         rule.page_code = rule_data.get("page_code", rule.page_code)
+        rule.table_code = rule_data.get("table_code", rule.table_code)
         rule.rule_type = rule_data.get("rule_type", rule.rule_type)
         rule.rule_name = rule_data.get("rule_name", rule.rule_name)
         rule.description = rule_data.get("description", rule.description)

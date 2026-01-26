@@ -4,6 +4,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import ScrollTable from '@/components/ScrollTable.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
 import { formatDateTime } from '@/utils/datetime'
+import { applyRowStyles } from '@/utils/styleApplicator'
 
 // 响应式数据
 const rawData = ref([])
@@ -54,7 +55,12 @@ const fetchData = async () => {
     const result = await response.json()
 
     if (result.code === 200 && result.data) {
-      rawData.value = result.data.items || []
+      const items = result.data.items || []
+      const rules = result.data.rules || []
+
+      // 使用统一的样式应用函数
+      rawData.value = applyRowStyles(items, rules)
+
       // 数据加载完成后重启滚动
       setTimeout(() => {
         scrollTableRef.value?.restartScroll()

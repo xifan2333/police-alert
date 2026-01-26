@@ -10,6 +10,7 @@ class DisplayRule(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     page_code = Column(String(50), nullable=False)
+    table_code = Column(String(50))  # 表格编码，用于区分同一页面内的多个表格
     rule_type = Column(String(50), nullable=False)
     rule_name = Column(String(100), nullable=False)
     rule_config = Column(Text, nullable=False)  # JSON 字符串
@@ -21,9 +22,10 @@ class DisplayRule(Base):
 
     __table_args__ = (
         Index('idx_display_rule_page_code', 'page_code'),
+        Index('idx_display_rule_page_table', 'page_code', 'table_code'),
         Index('idx_display_rule_rule_type', 'rule_type'),
         Index('idx_display_rule_priority', 'priority'),
     )
 
     def __repr__(self):
-        return f"<DisplayRule(page_code={self.page_code}, rule_name={self.rule_name})>"
+        return f"<DisplayRule(page_code={self.page_code}, table_code={self.table_code}, rule_name={self.rule_name})>"

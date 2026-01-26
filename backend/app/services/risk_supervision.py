@@ -38,12 +38,12 @@ def list_risk_supervision(
     offset = (page - 1) * page_size
     items_db = query.offset(offset).limit(page_size).all()
 
-    # 获取规则
+    # 获取规则（不再在后端应用，由前端统一处理）
     rules = []
     if include_rules:
         rules = get_rules_by_page(db, "risk_supervision")
 
-    # 转换数据
+    # 转换数据（返回纯数据，不应用样式）
     items = []
     for item in items_db:
         # 解析 risk_issues JSON
@@ -55,7 +55,7 @@ def list_risk_supervision(
         # 计算剩余天数
         days_remaining = calc_days_remaining(item.deadline)
 
-        # 构建数据项
+        # 构建数据项（纯数据，无样式）
         item_data = {
             "id": item.id,
             "case_number": item.case_number,
@@ -67,10 +67,6 @@ def list_risk_supervision(
             "officer_name": item.officer_name,
             "days_remaining": days_remaining
         }
-
-        # 应用样式规则
-        style = apply_color_rules({"days_remaining": days_remaining}, rules)
-        item_data["style"] = style
 
         items.append(item_data)
 

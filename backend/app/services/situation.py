@@ -5,6 +5,7 @@ from app.models.police_alert import PoliceAlert
 from app.models.call_record import CallRecord
 from app.models.geocoding_cache import GeocodingCache
 from app.services import geocoding
+from app.services.display_rule import get_rules_by_page, apply_color_rules
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Tuple
 
@@ -84,12 +85,19 @@ def calculate_ratio(current: int, previous: int) -> str:
         return f"{ratio:.1f}%"
 
 
-def get_police_classification(db: Session, time_period: str = "month") -> List[List]:
+def get_police_classification(db: Session, time_period: str = "month", apply_rules: bool = True) -> Tuple[List[List], List[Dict]]:
     """
     获取警情分类同环比分析
 
+    Args:
+        db: 数据库会话
+        time_period: 时间维度
+        apply_rules: 是否应用显示规则
+
     Returns:
-        [['名称', 数量, '同比', '环比'], ...]
+        (数据列表, 规则应用结果)
+        数据列表: [['名称', 数量, '同比', '环比'], ...]
+        规则应用结果: [{'row_index': 0, 'font_color': '#ff0000', 'style_token': 'danger'}, ...]
     """
     current_start, current_end, prev_start, yoy_start = get_time_range(time_period)
 
@@ -146,7 +154,26 @@ def get_police_classification(db: Session, time_period: str = "month") -> List[L
 
     result.append(['有效警情', total_count, calculate_ratio(total_count, total_yoy), calculate_ratio(total_count, total_prev)])
 
-    return result
+    # 应用显示规则
+    row_styles = []
+    if apply_rules:
+        rules = get_rules_by_page(db, "situation")
+        for row_index, row in enumerate(result):
+            item_data = {
+                "name": row[0],
+                "count": row[1],
+                "yoy": row[2],
+                "mom": row[3]
+            }
+            style = apply_color_rules(item_data, rules)
+            if style.get("font_color") or style.get("style_token"):
+                row_styles.append({
+                    "row_index": row_index,
+                    "font_color": style.get("font_color"),
+                    "style_token": style.get("style_token")
+                })
+
+    return result, row_styles
 
 
 def get_location_distribution(
@@ -274,10 +301,10 @@ async def get_situation_data(
         alert_types: 地图显示的警情类型列表，默认为 ['偷盗', '诈骗']
 
     Returns:
-        完整的态势数据（包含地图数据）
+        完整的态势数据（包含地图数据和每个表格的显示规则）
     """
-    # 警情分类总览
-    police_classification = get_police_classification(db, time_period)
+    # 警情分类总览（纯数据，不应用规则）
+    police_classification, _ = get_police_classification(db, time_period, apply_rules=False)
 
     # 各类警情地点分布
     theft_traditional = get_location_distribution(db, '偷盗', time_period)
@@ -295,6 +322,18 @@ async def get_situation_data(
         alert_types = ['偷盗', '诈骗']
     map_data = await get_map_data(db, alert_types, time_period)
 
+    # 为每个表格获取独立的显示规则
+    display_rules = {
+        "policeClassification": get_rules_by_page(db, "situation", "policeClassification"),
+        "theftTraditional": get_rules_by_page(db, "situation", "theftTraditional"),
+        "telecomFraud": get_rules_by_page(db, "situation", "telecomFraud"),
+        "viceCases": get_rules_by_page(db, "situation", "viceCases"),
+        "disputeCases": get_rules_by_page(db, "situation", "disputeCases"),
+        "fightCases": get_rules_by_page(db, "situation", "fightCases"),
+        "gamblingCases": get_rules_by_page(db, "situation", "gamblingCases"),
+        "repeatAlarms": get_rules_by_page(db, "situation", "repeatAlarms")
+    }
+
     return {
         'policeClassification': police_classification,
         'theftTraditional': theft_traditional,
@@ -304,7 +343,8 @@ async def get_situation_data(
         'fightCases': fight_cases,
         'gamblingCases': gambling_cases,
         'repeatAlarms': repeat_alarms,
-        'mapData': map_data
+        'mapData': map_data,
+        'displayRules': display_rules
     }
 
 

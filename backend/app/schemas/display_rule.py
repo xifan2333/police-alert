@@ -7,6 +7,7 @@ from datetime import datetime
 class DisplayRuleBase(BaseModel):
     """显示规则基础模型"""
     page_code: str
+    table_code: Optional[str] = None
     rule_type: str
     rule_name: str
     rule_config: dict

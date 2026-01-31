@@ -42,8 +42,9 @@ const props = defineProps({
 const scrollContainer = ref(null)
 const scrollTimer = ref(null)
 const isPaused = ref(false)
+const currentIndex = ref(0)
 
-// 自动滚动
+// 自动轮播（横向）
 const startAutoScroll = () => {
   if (!props.autoScroll) return
 
@@ -54,16 +55,24 @@ const startAutoScroll = () => {
   scrollTimer.value = setInterval(() => {
     if (!isPaused.value && scrollContainer.value) {
       const container = scrollContainer.value
-      const scrollStep = 1
+      const columns = container.querySelectorAll('.table-column')
 
-      if (container.scrollTop + container.clientHeight >= container.scrollHeight) {
-        // 滚动到底部，回到顶部
-        container.scrollTop = 0
-      } else {
-        container.scrollTop += scrollStep
-      }
+      if (columns.length === 0) return
+
+      // 计算下一个索引
+      currentIndex.value = (currentIndex.value + 1) % columns.length
+
+      // 获取目标列的位置
+      const targetColumn = columns[currentIndex.value]
+      const targetLeft = targetColumn.offsetLeft
+
+      // 平滑滚动到目标位置
+      container.scrollTo({
+        left: targetLeft,
+        behavior: 'smooth'
+      })
     }
-  }, props.scrollSpeed)
+  }, props.scrollSpeed * 50) // 调整轮播间隔（原来是30ms，现在是1500ms）
 }
 
 // 停止滚动
@@ -109,14 +118,14 @@ onUnmounted(() => {
 
 <template>
   <div class="scroll-table">
-    <!-- 表头 -->
-    <div class="table-header">
+    <!-- 表头（纵向） -->
+    <div class="table-header-vertical">
       <div
         v-for="(header, index) in headers"
         :key="index"
-        class="header-cell"
+        class="header-cell-vertical"
         :style="{
-          width: header.width,
+          height: header.height || '60px',
           textAlign: header.align || 'center'
         }"
       >
@@ -124,31 +133,31 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 表体 -->
+    <!-- 表体（横向滚动） -->
     <div
       ref="scrollContainer"
-      class="table-body"
+      class="table-body-horizontal"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
     >
       <div
-        v-for="(item, rowIndex) in data"
-        :key="rowIndex"
-        class="table-row"
-        :style="getRowStyle(item, rowIndex)"
+        v-for="(item, colIndex) in data"
+        :key="colIndex"
+        class="table-column"
+        :style="getRowStyle(item, colIndex)"
       >
         <div
-          v-for="(header, colIndex) in headers"
-          :key="colIndex"
-          class="table-cell"
+          v-for="(header, rowIndex) in headers"
+          :key="rowIndex"
+          class="table-cell-horizontal"
           :class="{ 'content-cell': header.wrap }"
           :style="{
-            width: header.width,
+            height: header.height || '60px',
             textAlign: header.align || 'center',
             justifyContent: header.align === 'left' ? 'flex-start' : header.align === 'right' ? 'flex-end' : 'center'
           }"
         >
-          {{ getCellValue(item, colIndex) }}
+          {{ getCellValue(item, rowIndex) }}
         </div>
       </div>
     </div>
@@ -160,80 +169,107 @@ onUnmounted(() => {
 .scroll-table {
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-/* 表头 */
-.table-header {
+/* 纵向表头 */
+.table-header-vertical {
   display: flex;
-  background: #1e3a8a;
-  border-radius: 4px 4px 0 0;
-  padding: 0 8px;
-  height: 50px;
-  align-items: center;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(30, 58, 138, 0.8) 0%, rgba(30, 58, 138, 0.6) 100%);
+  backdrop-filter: blur(10px);
+  border-right: 2px solid rgba(59, 130, 246, 0.3);
   flex-shrink: 0;
+  min-width: 120px;
 }
 
-.header-cell {
-  padding: 0 8px;
+.header-cell-vertical {
+  padding: 0 16px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
 }
 
-/* 表体 */
-.table-body {
+.header-cell-vertical:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.header-cell-vertical:last-child {
+  border-bottom: none;
+}
+
+/* 横向表体 */
+.table-body-horizontal {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: thin;
-  scrollbar-color: rgba(14, 165, 233, 0.5) rgba(0, 0, 0, 0.2);
-  background: transparent;
+  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.2);
+  scroll-behavior: smooth;
 }
 
-.table-body::-webkit-scrollbar {
-  width: 6px;
+.table-body-horizontal::-webkit-scrollbar {
+  height: 6px;
 }
 
-.table-body::-webkit-scrollbar-track {
+.table-body-horizontal::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 }
 
-.table-body::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.5);
+.table-body-horizontal::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
   border-radius: 3px;
 }
 
-.table-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.7);
+.table-body-horizontal::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.7);
 }
 
-/* 表格行 */
-.table-row {
+/* 表格列 */
+.table-column {
   display: flex;
-  padding: 16px 8px;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.1);
-  transition: background 0.2s;
-  min-height: 80px;
+  flex-direction: column;
+  min-width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(59, 130, 246, 0.15);
+  transition: all 0.3s ease;
 }
 
-.table-row:hover {
-  background: rgba(14, 165, 233, 0.15) !important;
+.table-column:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
 }
 
-/* 表格单元格 */
-.table-cell {
-  padding: 0 8px;
+.table-column:last-child {
+  border-right: none;
+}
+
+/* 横向单元格 */
+.table-cell-horizontal {
+  padding: 0 16px;
   font-size: 14px;
   display: flex;
   align-items: center;
-  text-align: center;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
   word-break: break-word;
+  color: #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.table-cell-horizontal:last-child {
+  border-bottom: none;
 }
 
 /* 内容单元格（支持换行） */
@@ -242,5 +278,6 @@ onUnmounted(() => {
   justify-content: flex-start;
   line-height: 1.6;
   white-space: normal;
+  padding: 12px 16px;
 }
 </style>

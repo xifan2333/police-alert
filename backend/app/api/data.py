@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services import risk_supervision, dispute_management, situation
+from app.models.display_rule import DisplayRule
 from typing import Optional
 
 router = APIRouter()
@@ -70,4 +71,31 @@ async def get_situation_data(
     return {
         "code": 200,
         "data": data
+    }
+
+
+@router.get("/display-rules", tags=["数据"])
+def get_display_rules(
+    page_code: Optional[str] = Query(None, description="页面代码"),
+    db: Session = Depends(get_db)
+):
+    """获取显示规则描述（用于页面底部提示）"""
+    # 构建查询
+    query = db.query(DisplayRule).filter(DisplayRule.is_enabled == 1)
+
+    # 如果指定了 page_code，只返回该页面的规则
+    if page_code:
+        query = query.filter(DisplayRule.page_code == page_code)
+
+    rules = query.order_by(DisplayRule.priority.desc()).all()
+
+    # 拼接所有规则描述
+    descriptions = [rule.description for rule in rules if rule.description]
+    display_text = " | ".join(descriptions) if descriptions else "暂无显示规则"
+
+    return {
+        "code": 200,
+        "data": {
+            "display_rules": display_text
+        }
     }

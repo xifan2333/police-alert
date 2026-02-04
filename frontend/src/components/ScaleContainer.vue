@@ -81,7 +81,7 @@ onMounted(() => {
   height: 100vh;
   position: relative;
   overflow: hidden;
-  background-color: #0c1029; /* 深蓝背景色，与警务主题匹配 */
+  background-color: var(--c-bg-page);
 }
 
 .scale-container {

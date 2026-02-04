@@ -13,12 +13,12 @@ const isLoading = ref(true)
 // 地图类型筛选
 const selectedTypes = ref(['偷盗', '诈骗'])
 const availableTypes = [
-  { label: '偷盗', value: '偷盗', color: '#ef4444' },
-  { label: '诈骗', value: '诈骗', color: '#f59e0b' },
-  { label: '涉黄', value: '涉黄', color: '#8b5cf6' },
-  { label: '涉赌', value: '涉赌', color: '#ec4899' },
-  { label: '纠纷', value: '纠纷', color: '#10b981' },
-  { label: '人身伤害', value: '人身伤害', color: '#06b6d4' }
+  { label: '偷盗', value: '偷盗', color: 'var(--c-category-theft)' },
+  { label: '诈骗', value: '诈骗', color: 'var(--c-category-fraud)' },
+  { label: '涉黄', value: '涉黄', color: 'var(--c-category-sex-related)' },
+  { label: '涉赌', value: '涉赌', color: 'var(--c-category-gambling)' },
+  { label: '纠纷', value: '纠纷', color: 'var(--c-category-dispute)' },
+  { label: '人身伤害', value: '人身伤害', color: 'var(--c-category-injury)' }
 ]
 
 // 时间周期选择
@@ -33,9 +33,9 @@ const policeClassification = ref({
   header: ['名称', '数量', '同比', '环比'],
   data: [],
   rowNum: 7,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)',
+  headerBGC: 'rgba(var(--c-primary-rgb), 0.2)',
+  oddRowBGC: 'rgba(var(--c-primary-rgb), 0.05)',
+  evenRowBGC: 'rgba(var(--c-primary-rgb), 0.1)',
   columnWidth: [120, 80, 80, 80],
   align: ['left', 'center', 'center', 'center']
 })
@@ -44,63 +44,63 @@ const theftTraditional = ref({
   header: ['地点', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
 })
 
 const telecomFraud = ref({
   header: ['小区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
 })
 
 const viceCases = ref({
   header: ['小区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
 })
 
 const disputeCases = ref({
   header: ['社区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
 })
 
 const fightCases = ref({
   header: ['区域', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
 })
 
 const gamblingCases = ref({
   header: ['地点', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)'
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
 })
 
 const repeatAlarms = ref({
   header: ['地点', '报警次数', '最近报警时间'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(14, 165, 233, 0.2)',
-  oddRowBGC: 'rgba(14, 165, 233, 0.05)',
-  evenRowBGC: 'rgba(14, 165, 233, 0.1)',
+  headerBGC: 'rgba(0, 191, 255, 0.2)',
+  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
+  evenRowBGC: 'rgba(0, 191, 255, 0.1)',
   columnWidth: [200, 100, 120],
   align: ['left', 'center', 'center']
 })
@@ -111,13 +111,13 @@ const overviewChartRef = ref(null)
 
 // 分类配置
 const categories = [
-  { label: '偷盗', key: 'theft', color: '#ef4444', dataRef: 'theftTraditional' },
-  { label: '诈骗', key: 'telecom', color: '#f59e0b', dataRef: 'telecomFraud' },
-  { label: '涉黄案件', key: 'vice', color: '#8b5cf6', dataRef: 'viceCases' },
-  { label: '纠纷案件', key: 'dispute', color: '#10b981', dataRef: 'disputeCases' },
-  { label: '打架斗殴', key: 'fight', color: '#06b6d4', dataRef: 'fightCases' },
-  { label: '涉赌案件', key: 'gambling', color: '#ec4899', dataRef: 'gamblingCases' },
-  { label: '重复报警', key: 'repeat', color: '#f97316', dataRef: 'repeatAlarms' }
+  { label: '偷盗', key: 'theft', color: 'var(--c-category-theft)', dataRef: 'theftTraditional' },
+  { label: '诈骗', key: 'telecom', color: 'var(--c-category-fraud)', dataRef: 'telecomFraud' },
+  { label: '涉黄案件', key: 'vice', color: 'var(--c-category-sex-related)', dataRef: 'viceCases' },
+  { label: '纠纷案件', key: 'dispute', color: 'var(--c-category-dispute)', dataRef: 'disputeCases' },
+  { label: '打架斗殴', key: 'fight', color: 'var(--c-category-injury)', dataRef: 'fightCases' },
+  { label: '涉赌案件', key: 'gambling', color: 'var(--c-category-gambling)', dataRef: 'gamblingCases' },
+  { label: '重复报警', key: 'repeat', color: 'var(--c-category-repeated)', dataRef: 'repeatAlarms' }
 ]
 
 // 获取分类数据
@@ -205,7 +205,7 @@ const mapOverlays = ref([])
 // 获取类型颜色
 const getTypeColor = (alertType) => {
   const type = availableTypes.find(t => t.value === alertType)
-  return type ? type.color : '#3b82f6'
+  return type ? type.color : '#00BFFF'
 }
 
 // 初始化天地图
@@ -290,7 +290,7 @@ const updateMapMarkers = () => {
     label.setFontColor('#1e293b')
     label.setBackgroundColor('#ffffff')
     label.setBorderLine(2)
-    label.setBorderColor('#3b82f6')
+    label.setBorderColor('#00BFFF')
     label.setOpacity(0.95)
 
     // 添加到地图
@@ -434,7 +434,7 @@ const initOverviewChart = () => {
       'rgba(34, 197, 94, 0.9)'    // 有效警情（总计）- 亮绿色
     ]
     const barColors = quantities.map((_, index) => {
-      return defaultColors[index] || 'rgba(59, 130, 246, 0.8)'
+      return defaultColors[index] || 'rgba(0, 191, 255, 0.8)'
     })
 
     const option = {
@@ -442,7 +442,7 @@ const initOverviewChart = () => {
         text: '警情分类总览',
         left: 'center',
         textStyle: {
-          color: '#C9FFFF',
+          color: '#00E5FF',
           fontSize: 28,
           fontWeight: 600
         }
@@ -450,9 +450,9 @@ const initOverviewChart = () => {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
-        backgroundColor: 'rgba(6, 24, 70, 0.9)',
-        borderColor: 'rgba(14, 165, 233, 0.5)',
-        textStyle: { color: '#C9FFFF' },
+        backgroundColor: 'rgba(0, 30, 60, 0.9)',
+        borderColor: 'rgba(0, 191, 255, 0.5)',
+        textStyle: { color: '#00E5FF' },
         formatter: function (params) {
           // params 是一个数组，包含了每个 series 在这个点上的信息
           const dataIndex = params[0].dataIndex
@@ -481,7 +481,7 @@ const initOverviewChart = () => {
         ],
         top: '12%',
         textStyle: {
-          color: '#C9FFFF',
+          color: '#00E5FF',
           fontSize: 16
         }
       },
@@ -498,7 +498,7 @@ const initOverviewChart = () => {
         axisLabel: {
           rotate: 0, // 不旋转
           interval: 0, // 强制显示所有标签
-          color: '#94a3b8',
+          color: '#A8B2C5',
           fontSize: 14,
           // formatter 实现文字竖向排列
           formatter: function (value) {
@@ -506,7 +506,7 @@ const initOverviewChart = () => {
           }
         },
         axisLine: {
-          lineStyle: { color: 'rgba(14, 165, 233, 0.3)' }
+          lineStyle: { color: 'rgba(0, 191, 255, 0.3)' }
         }
       },
       yAxis: [
@@ -515,23 +515,23 @@ const initOverviewChart = () => {
           type: 'value',
           name: '数量',
           position: 'left',
-          nameTextStyle: { color: '#94a3b8', fontSize: 16 },
-          axisLabel: { color: '#94a3b8', fontSize: 14 },
-          axisLine: { show: true, lineStyle: { color: 'rgba(14, 165, 233, 0.3)' } },
-          splitLine: { lineStyle: { color: 'rgba(14, 165, 233, 0.1)' } }
+          nameTextStyle: { color: '#A8B2C5', fontSize: 16 },
+          axisLabel: { color: '#A8B2C5', fontSize: 14 },
+          axisLine: { show: true, lineStyle: { color: 'rgba(0, 191, 255, 0.3)' } },
+          splitLine: { lineStyle: { color: 'rgba(0, 191, 255, 0.1)' } }
         },
         {
           // Y 轴 1 (右侧): 用于"同比"和"环比"
           type: 'value',
           name: '百分比',
           position: 'right',
-          nameTextStyle: { color: '#94a3b8', fontSize: 16 },
+          nameTextStyle: { color: '#A8B2C5', fontSize: 16 },
           axisLabel: {
-            color: '#94a3b8',
+            color: '#A8B2C5',
             fontSize: 14,
             formatter: '{value}%' // 自动为标签添加百分号
           },
-          axisLine: { show: true, lineStyle: { color: 'rgba(14, 165, 233, 0.3)' } },
+          axisLine: { show: true, lineStyle: { color: 'rgba(0, 191, 255, 0.3)' } },
           splitLine: { show: false } // 右侧Y轴不显示分割线，保持图表简洁
         }
       ],
@@ -550,7 +550,7 @@ const initOverviewChart = () => {
           label: {
             show: true,
             position: 'top',
-            color: '#C9FFFF',
+            color: '#00E5FF',
             fontSize: 14,
             formatter: '{c}' // 仅在柱顶显示数值
           }
@@ -561,7 +561,7 @@ const initOverviewChart = () => {
           yAxisIndex: 1, // 关联到右侧的 Y 轴 (索引为 1)
           smooth: true,
           data: tongbiValues,
-          itemStyle: { color: '#06b6d4' }, // 使用明亮的青色
+          itemStyle: { color: '#00E5FF' }, // accent 青色
           lineStyle: { width: 3 }
         },
         {
@@ -570,7 +570,7 @@ const initOverviewChart = () => {
           yAxisIndex: 1, // 关联到右侧的 Y 轴 (索引为 1)
           smooth: true,
           data: huanbiValues,
-          itemStyle: { color: '#f59e0b' }, // 使用醒目的琥珀色
+          itemStyle: { color: '#FBBF24' }, // warning 黄色
           lineStyle: { width: 3 }
         }
       ]
@@ -698,9 +698,9 @@ onMounted(() => {
 .situation-page {
   height: 100%;
   width: 100%;
-  background: url(/main-bg-003.jpg) center/cover no-repeat;
-  font-family: sans-serif;
-  color: #e5e7eb;
+  background: url(/main-bg.png) center/cover no-repeat;
+  font-family: var(--font-sans);
+  color: var(--c-text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -732,8 +732,7 @@ onMounted(() => {
 
 .table-content,
 .chart-content {
-  background: rgba(6, 24, 70, 0.6);
-  backdrop-filter: blur(10px);
+  background: var(--c-bg-panel);
   padding: 12px;
   height: 100%;
   overflow: hidden;
@@ -745,10 +744,10 @@ onMounted(() => {
 .table-title {
   font-size: 28px;
   font-weight: 600;
-  color: #C9FFFF;
+  color: var(--c-accent);
   text-align: center;
   padding-bottom: 8px;
-  border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+  border-bottom: 2px solid var(--c-border);
   flex-shrink: 0;
 }
 
@@ -767,8 +766,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(6, 24, 70, 0.6);
-  backdrop-filter: blur(10px);
+  background: var(--c-bg-panel);
   padding: 16px;
 }
 
@@ -792,7 +790,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--c-text-primary-rgb), 0.5);
   font-size: 48px;
 }
 
@@ -802,9 +800,9 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   padding: 12px;
-  background: rgba(14, 165, 233, 0.1);
+  background: rgba(var(--c-primary-rgb), 0.1);
   border-radius: 8px;
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  border: 1px solid var(--c-border);
 }
 
 .control-group {
@@ -816,7 +814,7 @@ onMounted(() => {
 .control-label {
   font-size: 16px;
   font-weight: 600;
-  color: #C9FFFF;
+  color: var(--c-accent);
   white-space: nowrap;
   margin-right: 4px;
 }
@@ -830,9 +828,9 @@ onMounted(() => {
 .control-btn {
   padding: 6px 14px;
   font-size: 15px;
-  color: #94a3b8;
-  background: rgba(30, 58, 138, 0.3);
-  border: 2px solid rgba(148, 163, 184, 0.3);
+  color: var(--c-text-secondary);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 2px solid rgba(var(--c-primary-rgb), 0.3);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -840,15 +838,15 @@ onMounted(() => {
 }
 
 .control-btn:hover {
-  background: rgba(30, 58, 138, 0.5);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.3);
+  border-color: rgba(var(--c-primary-rgb), 0.5);
 }
 
 .control-btn.active {
-  color: #fff;
-  background: var(--type-color, #3b82f6);
-  border-color: var(--type-color, #3b82f6);
-  box-shadow: 0 0 10px var(--type-color, #3b82f6);
+  color: var(--c-text-primary);
+  background: var(--type-color, var(--c-primary));
+  border-color: var(--type-color, var(--c-primary));
+  box-shadow: 0 0 10px var(--type-color, var(--c-primary));
 }
 
 .map-container :deep(.tdt-control-copyright) {
@@ -862,7 +860,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--c-text-primary-rgb), 0.5);
   font-size: 48px;
 }
 
@@ -881,8 +879,7 @@ onMounted(() => {
 }
 
 .category-content {
-  background: rgba(6, 24, 70, 0.6);
-  backdrop-filter: blur(10px);
+  background: var(--c-bg-panel);
   padding: 8px;
   height: 100%;
   display: flex;
@@ -894,10 +891,10 @@ onMounted(() => {
 .category-title {
   font-size: 20px;
   font-weight: 600;
-  color: #C9FFFF;
+  color: var(--c-accent);
   text-align: center;
   padding-bottom: 4px;
-  border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+  border-bottom: 2px solid var(--c-border);
   flex-shrink: 0;
 }
 

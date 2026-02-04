@@ -57,9 +57,9 @@ defineExpose({ show, hide })
     >
       <div class="toast-content">
         <div class="toast-icon">
-          <div v-if="type === 'success'" class="i-ri-checkbox-circle-fill text-2xl" />
-          <div v-else-if="type === 'error'" class="i-ri-close-circle-fill text-2xl" />
-          <div v-else-if="type === 'warning'" class="i-ri-error-warning-fill text-2xl" />
+          <div v-if="type === 'success'" class="i-ri-checkbox-circle-fill text-2xl text-white" />
+          <div v-else-if="type === 'error'" class="i-ri-close-circle-fill text-2xl text-white" />
+          <div v-else-if="type === 'warning'" class="i-ri-error-warning-fill text-2xl text-white" />
           <div v-else class="i-ri-information-fill text-2xl" />
         </div>
         <div class="toast-message text-sm">{{ message }}</div>
@@ -77,7 +77,6 @@ defineExpose({ show, hide })
   z-index: 9999;
   padding: 16px 24px;
   border-radius: 8px;
-  backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   min-width: 200px;
   max-width: 600px;
@@ -91,31 +90,32 @@ defineExpose({ show, hide })
 
 .toast-icon {
   flex-shrink: 0;
+  color: var(--c-text-primary);
 }
 
 .toast-message {
   font-weight: 500;
-  color: #fff;
+  color: var(--c-text-primary);
 }
 
 .toast-info {
-  background: rgba(59, 130, 246, 0.9);
-  border: 1px solid rgba(59, 130, 246, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.9);
+  border: 1px solid rgba(var(--c-primary-rgb), 0.5);
 }
 
 .toast-success {
-  background: rgba(34, 197, 94, 0.9);
-  border: 1px solid rgba(34, 197, 94, 0.5);
+  background: rgba(var(--c-success-rgb), 0.9);
+  border: 1px solid rgba(var(--c-success-rgb), 0.5);
 }
 
 .toast-warning {
-  background: rgba(251, 146, 60, 0.9);
-  border: 1px solid rgba(251, 146, 60, 0.5);
+  background: rgba(var(--c-warning-rgb), 0.9);
+  border: 1px solid rgba(var(--c-warning-rgb), 0.5);
 }
 
 .toast-error {
-  background: rgba(239, 68, 68, 0.9);
-  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: rgba(var(--c-danger-rgb), 0.9);
+  border: 1px solid rgba(var(--c-danger-rgb), 0.5);
 }
 
 /* 动画 */

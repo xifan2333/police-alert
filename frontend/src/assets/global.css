@@ -12,3 +12,100 @@
 html {
   font-size: 32px;
 }
+
+/*
+ * 天际蓝 (Sky Cyan) 配色方案 — CSS 变量
+ * ----------------------------------------
+ * 所有颜色通过此处统一管理，组件中通过 var(--c-xxx) 引用
+ */
+:root {
+  /* 主色调 - 明亮天蓝色 */
+  --c-primary: #00BFFF;
+  --c-primary-light: #5DD3FF;
+  --c-primary-light-rgb: 93, 211, 255;
+  --c-primary-dark: #0099CC;
+  --c-primary-darker: #007399;
+  --c-primary-rgb: 0, 191, 255;
+
+  /* 强调色 - 亮青色 */
+  --c-accent: #00E5FF;
+  --c-accent-rgb: 0, 229, 255;
+  --c-warning: #FFD600;
+  --c-danger: #FF5252;
+  --c-success: #00E676;
+
+  /* 背景色 - 不透明 */
+  --c-bg-surface: rgba(0, 30, 60, 0.95);
+  --c-bg-canvas: rgba(0, 20, 40, 0.95);
+  --c-bg-glass: rgba(0, 40, 80, 0.95);
+
+  /* 文字颜色 */
+  --c-text-primary: #FFFFFF;
+  --c-text-secondary: #B0E0FF;
+  --c-text-disabled: #5090B0;
+
+  /* 边框和分割线 - 更亮的青色 */
+  --c-border: rgba(0, 229, 255, 0.4);
+  --c-border-light: rgba(0, 229, 255, 0.2);
+  --c-border-strong: rgba(0, 229, 255, 0.6);
+
+  /* 渐变 */
+  --c-gradient-primary: linear-gradient(135deg, #00BFFF 0%, #00E5FF 100%);
+  --c-gradient-dark: linear-gradient(135deg, #0099CC 0%, #00BFFF 100%);
+
+  /* 数据可视化 */
+  --c-dataviz-1: #00BFFF;
+  --c-dataviz-2: #00E5FF;
+  --c-dataviz-3: #B388FF;
+  --c-dataviz-4: #FFD600;
+  --c-dataviz-5: #00E676;
+
+  /* 语义颜色 RGB 版本 (用于透明度) */
+  --c-text-primary-rgb: 255, 255, 255;
+  --c-success-rgb: 0, 230, 118;
+  --c-warning-rgb: 255, 214, 0;
+  --c-danger-rgb: 255, 82, 82;
+
+  /* 浅色语义色 (用于状态提示) */
+  --c-success-light: #86efac;
+  --c-danger-light: #fca5a5;
+
+  /* 警情分类颜色 */
+  --c-category-theft: #ef4444;
+  --c-category-fraud: #f59e0b;
+  --c-category-sex-related: #8b5cf6;
+  --c-category-injury: #06b6d4;
+  --c-category-gambling: #ec4899;
+  --c-category-dispute: #10b981;
+  --c-category-repeated: #f97316;
+
+  /* 警情分类颜色 RGB 版本 (用于图表透明度) */
+  --c-category-theft-rgb: 239, 68, 68;
+  --c-category-fraud-rgb: 245, 158, 11;
+  --c-category-sex-related-rgb: 139, 92, 246;
+  --c-category-injury-rgb: 6, 182, 212;
+  --c-category-gambling-rgb: 236, 72, 153;
+  --c-category-dispute-rgb: 16, 185, 129;
+  --c-category-repeated-rgb: 249, 115, 22;
+
+  /* 背景色层次 */
+  --c-bg-page: #041E2B;
+  --c-bg-panel: rgba(0, 30, 50, 0.95);
+  --c-bg-dialog: rgba(0, 30, 60, 0.85);
+  --c-bg-glass-dark: rgba(0, 30, 60, 0.95);
+
+  /* 灰色/中性色 */
+  --c-gray-400: #9ca3af;
+  --c-gray-500: #6b7280;
+
+  /* 文字颜色补充 */
+  --c-text-tertiary: #A8B2C5;
+
+  /* 阴影颜色 */
+  --c-shadow: rgba(0, 0, 0, 0.5);
+
+  /* 字体族 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+  --font-serif: KaiTi, STKaiti, "楷体", serif;
+  --font-mono: "SF Mono", "Fira Code", "Courier New", monospace;
+}

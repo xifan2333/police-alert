@@ -572,9 +572,9 @@ const handleTabChange = (tab) => {
 .admin-page {
   height: 100%;
   width: 100%;
-  background: url(/main-bg-003.jpg) center/cover no-repeat;
-  font-family: sans-serif;
-  color: #e5e7eb;
+  background: url(/main-bg.png) center/cover no-repeat;
+  font-family: var(--font-sans);
+  color: var(--c-text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -589,9 +589,8 @@ const handleTabChange = (tab) => {
 .admin-container {
   max-width: 1200px;
   margin: 0 auto;
-  background: rgba(6, 24, 70, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: var(--c-bg-dialog);
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -599,7 +598,7 @@ const handleTabChange = (tab) => {
 /* 标签页 */
 .tabs {
   display: flex;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.3);
+  border-bottom: 1px solid var(--c-border);
 }
 
 .tab-btn {
@@ -607,7 +606,7 @@ const handleTabChange = (tab) => {
   padding: 1rem;
   background: transparent;
   border: none;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s;
@@ -615,12 +614,12 @@ const handleTabChange = (tab) => {
 }
 
 .tab-btn:hover {
-  background: rgba(14, 165, 233, 0.1);
+  background: rgba(var(--c-primary-rgb), 0.1);
 }
 
 .tab-btn.active {
-  background: rgba(14, 165, 233, 0.2);
-  border-bottom-color: #3b82f6;
+  background: rgba(var(--c-primary-rgb), 0.2);
+  border-bottom-color: var(--c-primary);
   font-weight: 600;
 }
 
@@ -632,7 +631,7 @@ const handleTabChange = (tab) => {
 .panel-section {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+  border-bottom: 1px solid rgba(var(--c-primary-rgb), 0.2);
 }
 
 .panel-section:last-child {
@@ -643,7 +642,7 @@ const handleTabChange = (tab) => {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: var(--c-text-primary);
 }
 
 .section-header {
@@ -658,7 +657,7 @@ const handleTabChange = (tab) => {
 }
 
 .section-desc {
-  color: #9ca3af;
+  color: var(--c-text-secondary);
   margin-bottom: 1rem;
   font-size: 0.875rem;
 }
@@ -668,23 +667,23 @@ const handleTabChange = (tab) => {
   width: 100%;
   max-width: 400px;
   padding: 0.75rem;
-  background: rgba(30, 58, 138, 0.3);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 1px solid var(--c-border);
   border-radius: 4px;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   font-size: 1rem;
 }
 
 .file-input {
   display: block;
   margin-bottom: 1rem;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
 }
 
 .file-info {
   margin-bottom: 1rem;
   padding: 0.5rem;
-  background: rgba(30, 58, 138, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.15);
   border-radius: 4px;
   font-size: 0.875rem;
 }
@@ -701,27 +700,27 @@ const handleTabChange = (tab) => {
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--c-primary);
   color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--c-primary-dark);
 }
 
 .btn-primary:disabled {
-  background: #6b7280;
+  background: var(--c-gray-500);
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: rgba(14, 165, 233, 0.3);
-  color: #e5e7eb;
-  border: 1px solid rgba(14, 165, 233, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.3);
+  color: var(--c-text-primary);
+  border: 1px solid rgba(var(--c-primary-rgb), 0.5);
 }
 
 .btn-secondary:hover {
-  background: rgba(14, 165, 233, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.5);
 }
 
 /* 结果消息 */
@@ -733,15 +732,15 @@ const handleTabChange = (tab) => {
 }
 
 .result-message.success {
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid rgba(34, 197, 94, 0.5);
-  color: #86efac;
+  background: rgba(var(--c-success-rgb), 0.2);
+  border: 1px solid rgba(var(--c-success-rgb), 0.5);
+  color: var(--c-success-light);
 }
 
 .result-message.error {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
+  background: rgba(var(--c-danger-rgb), 0.2);
+  border: 1px solid rgba(var(--c-danger-rgb), 0.5);
+  color: var(--c-danger-light);
 }
 
 /* 规则列表 */
@@ -756,8 +755,8 @@ const handleTabChange = (tab) => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: rgba(30, 58, 138, 0.3);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 1px solid var(--c-border);
   border-radius: 4px;
 }
 
@@ -776,7 +775,7 @@ const handleTabChange = (tab) => {
   gap: 1rem;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--c-text-secondary);
 }
 
 .rule-page,
@@ -784,18 +783,18 @@ const handleTabChange = (tab) => {
 .rule-type,
 .rule-priority {
   padding: 0.25rem 0.5rem;
-  background: rgba(14, 165, 233, 0.2);
+  background: rgba(var(--c-primary-rgb), 0.2);
   border-radius: 4px;
 }
 
 .rule-desc {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--c-text-secondary);
 }
 
 .rule-config {
   font-size: 0.875rem;
-  color: #60a5fa;
+  color: var(--c-accent);
   margin-top: 0.5rem;
 }
 
@@ -814,38 +813,38 @@ const handleTabChange = (tab) => {
 }
 
 .btn-toggle.enabled {
-  background: rgba(34, 197, 94, 0.3);
-  color: #86efac;
+  background: rgba(var(--c-success-rgb), 0.3);
+  color: var(--c-success-light);
 }
 
 .btn-toggle.disabled {
   background: rgba(107, 114, 128, 0.3);
-  color: #9ca3af;
+  color: var(--c-gray-400);
 }
 
 .btn-action {
   padding: 0.5rem 1rem;
-  background: rgba(14, 165, 233, 0.3);
-  border: 1px solid rgba(14, 165, 233, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.3);
+  border: 1px solid rgba(var(--c-primary-rgb), 0.5);
   border-radius: 4px;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .btn-action:hover {
-  background: rgba(14, 165, 233, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.5);
 }
 
 .btn-action.btn-danger {
-  background: rgba(239, 68, 68, 0.3);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
+  background: rgba(var(--c-danger-rgb), 0.3);
+  border-color: rgba(var(--c-danger-rgb), 0.5);
+  color: var(--c-danger-light);
 }
 
 .btn-action.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.5);
+  background: rgba(var(--c-danger-rgb), 0.5);
 }
 
 /* 对话框 */
@@ -863,8 +862,8 @@ const handleTabChange = (tab) => {
 }
 
 .dialog {
-  background: rgba(6, 24, 70, 0.95);
-  border: 1px solid rgba(14, 165, 233, 0.5);
+  background: var(--c-bg-glass-dark);
+  border: 1px solid rgba(var(--c-primary-rgb), 0.5);
   border-radius: 8px;
   width: 90%;
   max-width: 600px;
@@ -881,20 +880,20 @@ const handleTabChange = (tab) => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.3);
+  border-bottom: 1px solid var(--c-border);
 }
 
 .dialog-header h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--c-text-primary);
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   font-size: 2rem;
   cursor: pointer;
   line-height: 1;
@@ -907,7 +906,7 @@ const handleTabChange = (tab) => {
 }
 
 .close-btn:hover {
-  color: #fff;
+  color: var(--c-text-primary);
 }
 
 .dialog-body {
@@ -916,7 +915,7 @@ const handleTabChange = (tab) => {
 
 .dialog-footer {
   padding: 1.5rem;
-  border-top: 1px solid rgba(14, 165, 233, 0.3);
+  border-top: 1px solid var(--c-border);
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -935,17 +934,17 @@ const handleTabChange = (tab) => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
   padding: 0.75rem;
-  background: rgba(30, 58, 138, 0.3);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 1px solid var(--c-border);
   border-radius: 4px;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   font-size: 1rem;
   font-family: inherit;
 }
@@ -953,7 +952,7 @@ const handleTabChange = (tab) => {
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: rgba(14, 165, 233, 0.6);
+  border-color: var(--c-border-strong);
 }
 
 .form-textarea {
@@ -969,10 +968,10 @@ const handleTabChange = (tab) => {
 .form-input-small {
   width: 100%;
   padding: 0.5rem;
-  background: rgba(30, 58, 138, 0.3);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 1px solid var(--c-border);
   border-radius: 4px;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   font-size: 0.875rem;
 }
 
@@ -980,8 +979,8 @@ const handleTabChange = (tab) => {
   width: 60px;
   height: 36px;
   padding: 0.25rem;
-  background: rgba(30, 58, 138, 0.3);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 1px solid var(--c-border);
   border-radius: 4px;
   cursor: pointer;
 }
@@ -1019,9 +1018,9 @@ const handleTabChange = (tab) => {
 .empty-conditions {
   padding: 2rem;
   text-align: center;
-  color: #9ca3af;
-  background: rgba(30, 58, 138, 0.2);
-  border: 1px dashed rgba(14, 165, 233, 0.3);
+  color: var(--c-text-secondary);
+  background: rgba(var(--c-primary-rgb), 0.1);
+  border: 1px dashed var(--c-border);
   border-radius: 4px;
 }
 
@@ -1033,8 +1032,8 @@ const handleTabChange = (tab) => {
 
 .condition-item {
   padding: 1rem;
-  background: rgba(30, 58, 138, 0.2);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(var(--c-primary-rgb), 0.1);
+  border: 1px solid var(--c-border);
   border-radius: 4px;
 }
 
@@ -1049,7 +1048,7 @@ const handleTabChange = (tab) => {
   display: block;
   margin-bottom: 0.25rem;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--c-text-secondary);
 }
 
 .condition-actions {

@@ -41,8 +41,8 @@ const getCellValue = (item, columnIndex) => {
 
 // 获取行样式
 const getRowStyle = (item, index) => ({
-  background: index % 2 === 0 ? 'rgba(30, 58, 138, 0.3)' : 'rgba(30, 58, 138, 0.2)',
-  color: item.style?.font_color || '#e5e7eb'
+  background: index % 2 === 0 ? 'rgba(var(--c-primary-rgb), 0.2)' : 'rgba(var(--c-primary-rgb), 0.1)',
+  color: item.style?.font_color || 'var(--c-text-primary)'
 })
 
 // 加载数据
@@ -126,9 +126,9 @@ onMounted(() => {
 .cases-page {
   height: 100%;
   width: 100%;
-  background: url(/main-bg-003.jpg) center/cover no-repeat;
-  font-family: sans-serif;
-  color: #e5e7eb;
+  background: url(/main-bg.png) center/cover no-repeat;
+  font-family: var(--font-sans);
+  color: var(--c-text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -142,12 +142,11 @@ onMounted(() => {
 
 .list-container {
   height: 100%;
-  background: rgba(6, 24, 70, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: var(--c-bg-panel);
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--c-shadow);
   overflow: hidden;
 }
 </style>

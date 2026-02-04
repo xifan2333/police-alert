@@ -39,8 +39,8 @@ const getCellValue = (item, columnIndex) => {
 
 // 获取行样式
 const getRowStyle = (item, index) => ({
-  background: index % 2 === 0 ? 'rgba(30, 58, 138, 0.3)' : 'rgba(30, 58, 138, 0.2)',
-  color: item.style?.font_color || '#e5e7eb'
+  background: index % 2 === 0 ? 'rgba(var(--c-primary-rgb), 0.2)' : 'rgba(var(--c-primary-rgb), 0.1)',
+  color: item.style?.font_color || 'var(--c-text-primary)'
 })
 
 // 加载数据
@@ -159,9 +159,9 @@ onMounted(() => {
 .disputes-page {
   height: 100%;
   width: 100%;
-  background: url(/main-bg-003.jpg) center/cover no-repeat;
-  font-family: sans-serif;
-  color: #e5e7eb;
+  background: url(/main-bg.png) center/cover no-repeat;
+  font-family: var(--font-sans);
+  color: var(--c-text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -179,12 +179,11 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: rgba(6, 24, 70, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: var(--c-bg-panel);
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--c-shadow);
   overflow: hidden;
 }
 
@@ -201,9 +200,9 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   padding: 12px;
-  background: rgba(14, 165, 233, 0.1);
+  background: rgba(var(--c-primary-rgb), 0.1);
   border-radius: 8px;
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  border: 1px solid var(--c-border);
 }
 
 .control-group {
@@ -215,7 +214,7 @@ onMounted(() => {
 .control-label {
   font-size: 16px;
   font-weight: 600;
-  color: #C9FFFF;
+  color: var(--c-accent);
   white-space: nowrap;
   margin-right: 4px;
 }
@@ -229,9 +228,9 @@ onMounted(() => {
 .control-btn {
   padding: 6px 14px;
   font-size: 15px;
-  color: #94a3b8;
-  background: rgba(30, 58, 138, 0.3);
-  border: 2px solid rgba(148, 163, 184, 0.3);
+  color: var(--c-text-secondary);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  border: 2px solid rgba(var(--c-primary-rgb), 0.3);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -239,14 +238,14 @@ onMounted(() => {
 }
 
 .control-btn:hover {
-  background: rgba(30, 58, 138, 0.5);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: rgba(var(--c-primary-rgb), 0.3);
+  border-color: rgba(var(--c-primary-rgb), 0.5);
 }
 
 .control-btn.active {
-  color: #fff;
-  background: #3b82f6;
-  border-color: #3b82f6;
-  box-shadow: 0 0 10px #3b82f6;
+  color: var(--c-text-primary);
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 10px var(--c-primary);
 }
 </style>

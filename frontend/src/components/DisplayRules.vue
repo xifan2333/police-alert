@@ -85,9 +85,9 @@ onMounted(() => {
 .rules-title {
   font-size: 16px;
   font-weight: 600;
-  color: #3b82f6;
+  color: var(--c-primary-light);
   letter-spacing: 2px;
-  text-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  text-shadow: 0 0 8px rgba(var(--c-primary-rgb), 0.6);
 }
 
 /* 规则内容 */
@@ -97,13 +97,13 @@ onMounted(() => {
 
 .loading-text {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--c-text-secondary);
 }
 
 .rules-text {
   font-size: 14px;
   line-height: 1.8;
-  color: #e5e7eb;
+  color: var(--c-text-primary);
   white-space: pre-wrap;
 }
 

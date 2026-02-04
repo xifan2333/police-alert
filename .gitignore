@@ -35,4 +35,7 @@ artifacts/
 
 # PyInstaller
 *.spec
+.claude/
+.ace-tool/
+
 

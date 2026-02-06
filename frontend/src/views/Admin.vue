@@ -572,7 +572,7 @@ const handleTabChange = (tab) => {
 .admin-page {
   height: 100%;
   width: 100%;
-  background: url(/main-bg.png) center/cover no-repeat;
+  background: var(--bg-sub) center/cover no-repeat;
   font-family: var(--font-sans);
   color: var(--c-text-primary);
   display: flex;

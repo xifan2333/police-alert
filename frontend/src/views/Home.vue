@@ -9,7 +9,6 @@ const router = useRouter()
 // 应用配置
 const appConfig = {
   title: '沈西所警务智管助手',
-  backgroundImage: '/main-bg.png',
   navItems: [
     {
       text: "警力动态监测",
@@ -72,10 +71,7 @@ const handleCornerClick = () => {
 </script>
 
 <template>
-  <div
-    class="home-container"
-    :style="{ backgroundImage: `url(${appConfig.backgroundImage})` }"
-  >
+  <div class="home-container">
     <!-- 标题区域 -->
     <header class="title-section">
       <h1 class="main-title">
@@ -111,9 +107,7 @@ const handleCornerClick = () => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: var(--bg-main) center/cover no-repeat;
 }
 
 /* 警徽 - 上方 */

@@ -33,76 +33,82 @@ const policeClassification = ref({
   header: ['名称', '数量', '同比', '环比'],
   data: [],
   rowNum: 7,
-  headerBGC: 'rgba(var(--c-primary-rgb), 0.2)',
-  oddRowBGC: 'rgba(var(--c-primary-rgb), 0.05)',
-  evenRowBGC: 'rgba(var(--c-primary-rgb), 0.1)',
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
   columnWidth: [120, 80, 80, 80],
-  align: ['left', 'center', 'center', 'center']
+  align: ['center', 'center', 'center', 'center']
 })
 
 const theftTraditional = ref({
   header: ['地点', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  align: ['center', 'center']
 })
 
 const telecomFraud = ref({
   header: ['小区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  align: ['center', 'center']
 })
 
 const viceCases = ref({
   header: ['小区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  align: ['center', 'center']
 })
 
 const disputeCases = ref({
   header: ['社区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  align: ['center', 'center']
 })
 
 const fightCases = ref({
   header: ['区域', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  align: ['center', 'center']
 })
 
 const gamblingCases = ref({
   header: ['地点', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)'
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  align: ['center', 'center']
 })
 
 const repeatAlarms = ref({
   header: ['地点', '报警次数', '最近报警时间'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 191, 255, 0.2)',
-  oddRowBGC: 'rgba(0, 191, 255, 0.05)',
-  evenRowBGC: 'rgba(0, 191, 255, 0.1)',
+  headerBGC: 'rgba(0, 153, 204, 0.35)',
+  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
+  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
   columnWidth: [200, 100, 120],
-  align: ['left', 'center', 'center']
+  align: ['center', 'center', 'center']
 })
 
 // 图表实例
@@ -371,6 +377,11 @@ watch(timePeriod, (newVal) => {
   fetchData()
 })
 
+// 获取 CSS 变量值
+const getCSSVariable = (name) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
 // 初始化总览图表（警情分类总览）
 const initOverviewChart = () => {
   nextTick(() => {
@@ -425,34 +436,25 @@ const initOverviewChart = () => {
 
     // 图表使用前端默认配色方案（不应用后端规则）
     const defaultColors = [
-      'rgba(239, 68, 68, 0.8)',   // 偷盗 - 红色
-      'rgba(245, 158, 11, 0.8)',  // 诈骗 - 橙色
-      'rgba(139, 92, 246, 0.8)',  // 涉黄 - 紫色
-      'rgba(236, 72, 153, 0.8)',  // 涉赌 - 粉色
-      'rgba(16, 185, 129, 0.8)',  // 纠纷 - 绿色
-      'rgba(6, 182, 212, 0.8)',   // 人身伤害 - 青色
-      'rgba(34, 197, 94, 0.9)'    // 有效警情（总计）- 亮绿色
+      `rgba(var(--c-category-theft-rgb), 0.8)`,      // 偷盗 - 红色
+      `rgba(var(--c-category-fraud-rgb), 0.8)`,     // 诈骗 - 橙色
+      `rgba(var(--c-category-sex-related-rgb), 0.8)`, // 涉黄 - 紫色
+      `rgba(var(--c-category-gambling-rgb), 0.8)`,  // 涉赌 - 粉色
+      `rgba(var(--c-category-dispute-rgb), 0.8)`,   // 纠纷 - 绿色
+      `rgba(var(--c-category-injury-rgb), 0.8)`,    // 人身伤害 - 青色
+      `rgba(var(--c-success-rgb), 0.9)`             // 有效警情（总计）- 亮绿色
     ]
     const barColors = quantities.map((_, index) => {
       return defaultColors[index] || 'rgba(0, 191, 255, 0.8)'
     })
 
     const option = {
-      title: {
-        text: '警情分类总览',
-        left: 'center',
-        textStyle: {
-          color: '#00E5FF',
-          fontSize: 28,
-          fontWeight: 600
-        }
-      },
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
-        backgroundColor: 'rgba(0, 30, 60, 0.9)',
-        borderColor: 'rgba(0, 191, 255, 0.5)',
-        textStyle: { color: '#00E5FF' },
+        backgroundColor: getCSSVariable('--c-chart-tooltip-bg'),
+        borderColor: getCSSVariable('--c-chart-tooltip-border'),
+        textStyle: { color: getCSSVariable('--c-accent') },
         formatter: function (params) {
           // params 是一个数组，包含了每个 series 在这个点上的信息
           const dataIndex = params[0].dataIndex
@@ -479,16 +481,16 @@ const initOverviewChart = () => {
             { name: '同比' },
             { name: '环比' }
         ],
-        top: '12%',
+        top: '3%',
         textStyle: {
-          color: '#00E5FF',
+          color: getCSSVariable('--c-accent'),
           fontSize: 16
         }
       },
       grid: {
         left: '5%',
         right: '5%',
-        top: '25%',
+        top: '15%',
         bottom: '20%', // 增大底部边距，为竖向标签预留充足空间
         containLabel: true
       },
@@ -498,7 +500,7 @@ const initOverviewChart = () => {
         axisLabel: {
           rotate: 0, // 不旋转
           interval: 0, // 强制显示所有标签
-          color: '#A8B2C5',
+          color: getCSSVariable('--c-text-tertiary'),
           fontSize: 14,
           // formatter 实现文字竖向排列
           formatter: function (value) {
@@ -506,7 +508,7 @@ const initOverviewChart = () => {
           }
         },
         axisLine: {
-          lineStyle: { color: 'rgba(0, 191, 255, 0.3)' }
+          lineStyle: { color: getCSSVariable('--c-chart-axis') }
         }
       },
       yAxis: [
@@ -515,23 +517,23 @@ const initOverviewChart = () => {
           type: 'value',
           name: '数量',
           position: 'left',
-          nameTextStyle: { color: '#A8B2C5', fontSize: 16 },
-          axisLabel: { color: '#A8B2C5', fontSize: 14 },
-          axisLine: { show: true, lineStyle: { color: 'rgba(0, 191, 255, 0.3)' } },
-          splitLine: { lineStyle: { color: 'rgba(0, 191, 255, 0.1)' } }
+          nameTextStyle: { color: getCSSVariable('--c-text-tertiary'), fontSize: 16 },
+          axisLabel: { color: getCSSVariable('--c-text-tertiary'), fontSize: 14 },
+          axisLine: { show: true, lineStyle: { color: getCSSVariable('--c-chart-axis') } },
+          splitLine: { lineStyle: { color: getCSSVariable('--c-chart-split') } }
         },
         {
           // Y 轴 1 (右侧): 用于"同比"和"环比"
           type: 'value',
           name: '百分比',
           position: 'right',
-          nameTextStyle: { color: '#A8B2C5', fontSize: 16 },
+          nameTextStyle: { color: getCSSVariable('--c-text-tertiary'), fontSize: 16 },
           axisLabel: {
-            color: '#A8B2C5',
+            color: getCSSVariable('--c-text-tertiary'),
             fontSize: 14,
             formatter: '{value}%' // 自动为标签添加百分号
           },
-          axisLine: { show: true, lineStyle: { color: 'rgba(0, 191, 255, 0.3)' } },
+          axisLine: { show: true, lineStyle: { color: getCSSVariable('--c-chart-axis') } },
           splitLine: { show: false } // 右侧Y轴不显示分割线，保持图表简洁
         }
       ],
@@ -550,7 +552,7 @@ const initOverviewChart = () => {
           label: {
             show: true,
             position: 'top',
-            color: '#00E5FF',
+            color: getCSSVariable('--c-accent'),
             fontSize: 14,
             formatter: '{c}' // 仅在柱顶显示数值
           }
@@ -561,7 +563,7 @@ const initOverviewChart = () => {
           yAxisIndex: 1, // 关联到右侧的 Y 轴 (索引为 1)
           smooth: true,
           data: tongbiValues,
-          itemStyle: { color: '#00E5FF' }, // accent 青色
+          itemStyle: { color: getCSSVariable('--c-chart-line-tongbi') }, // accent 青色
           lineStyle: { width: 3 }
         },
         {
@@ -570,7 +572,7 @@ const initOverviewChart = () => {
           yAxisIndex: 1, // 关联到右侧的 Y 轴 (索引为 1)
           smooth: true,
           data: huanbiValues,
-          itemStyle: { color: '#FBBF24' }, // warning 黄色
+          itemStyle: { color: getCSSVariable('--c-chart-line-huanbi') }, // warning 黄色
           lineStyle: { width: 3 }
         }
       ]
@@ -608,6 +610,7 @@ onMounted(() => {
         <div class="overview-chart-box">
           <dv-border-box-12>
             <div class="chart-content">
+              <div class="table-title">警情分类总览</div>
               <div ref="overviewChartRef" class="chart-inner"></div>
             </div>
           </dv-border-box-12>
@@ -710,9 +713,9 @@ onMounted(() => {
 .main-section {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 12px;
-  padding: 0 12px 12px 12px;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 20px;
+  padding: 0 20px 20px 20px;
   overflow: hidden;
 }
 
@@ -720,7 +723,7 @@ onMounted(() => {
 .left-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
   overflow: hidden;
 }
 
@@ -732,7 +735,9 @@ onMounted(() => {
 
 .table-content,
 .chart-content {
-  background: var(--c-bg-panel);
+  background: var(--c-panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 12px;
   height: 100%;
   overflow: hidden;
@@ -746,9 +751,30 @@ onMounted(() => {
   font-weight: 600;
   color: var(--c-accent);
   text-align: center;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--c-border);
+  padding: 8px 0;
+  margin-bottom: 8px;
   flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.table-title::before,
+.table-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--c-accent), transparent);
+}
+
+.table-title::before {
+  background: linear-gradient(90deg, transparent, var(--c-accent));
+}
+
+.table-title::after {
+  background: linear-gradient(90deg, var(--c-accent), transparent);
 }
 
 .chart-inner {
@@ -766,7 +792,9 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--c-bg-panel);
+  background: var(--c-panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 16px;
 }
 
@@ -798,8 +826,9 @@ onMounted(() => {
 .map-controls {
   flex-shrink: 0;
   display: flex;
-  gap: 16px;
-  padding: 12px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
   background: rgba(var(--c-primary-rgb), 0.1);
   border-radius: 8px;
   border: 1px solid var(--c-border);
@@ -808,7 +837,7 @@ onMounted(() => {
 .control-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .control-label {
@@ -821,16 +850,16 @@ onMounted(() => {
 
 .control-buttons {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .control-btn {
-  padding: 6px 14px;
-  font-size: 15px;
+  padding: 6px 12px;
+  font-size: 14px;
   color: var(--c-text-secondary);
-  background: rgba(var(--c-primary-rgb), 0.15);
-  border: 2px solid rgba(var(--c-primary-rgb), 0.3);
+  background: var(--c-control-bg);
+  border: 2px solid var(--c-control-border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -838,8 +867,8 @@ onMounted(() => {
 }
 
 .control-btn:hover {
-  background: rgba(var(--c-primary-rgb), 0.3);
-  border-color: rgba(var(--c-primary-rgb), 0.5);
+  background: var(--c-control-hover-bg);
+  border-color: var(--c-control-hover-border);
 }
 
 .control-btn.active {
@@ -869,7 +898,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 12px;
+  gap: 20px;
   overflow: hidden;
 }
 
@@ -879,7 +908,9 @@ onMounted(() => {
 }
 
 .category-content {
-  background: var(--c-bg-panel);
+  background: var(--c-panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 8px;
   height: 100%;
   display: flex;
@@ -889,13 +920,17 @@ onMounted(() => {
 }
 
 .category-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--c-accent);
   text-align: center;
-  padding-bottom: 4px;
-  border-bottom: 2px solid var(--c-border);
+  padding: 6px 10px;
+  margin-bottom: 6px;
   flex-shrink: 0;
+  position: relative;
+  background: linear-gradient(90deg, transparent, rgba(var(--c-accent-rgb), 0.15), transparent);
+  border-left: 3px solid var(--c-accent);
+  border-right: 3px solid var(--c-accent);
 }
 
 .category-table {

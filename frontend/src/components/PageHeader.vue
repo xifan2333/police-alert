@@ -36,7 +36,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="page-header">
+    <header class="page-header">
     <!-- 左侧：警徽和派出所名称 -->
     <div class="header-left">
       <img src="/logo-blue.png" alt="警徽" class="header-logo" />
@@ -55,21 +55,23 @@ onUnmounted(() => {
 
     <!-- 右侧：时间 -->
     <div class="header-right">
-      <dv-decoration-3 class="time-decoration" />
       <div class="current-time">{{ currentTime }}</div>
     </div>
-  </header>
+    </header>
 </template>
 
 <style scoped>
+
+
 .page-header {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 0 24px;
   height: 80px;
-  background: transparent;
+  background: var(--bg-header) center 0/cover no-repeat;
+  backdrop-filter: blur(8px);
   overflow: hidden;
   gap: 24px;
 }
@@ -83,10 +85,11 @@ onUnmounted(() => {
 }
 
 .header-logo {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   opacity: 0.95;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 0 8px rgba(var(--c-primary-rgb), 0.5))
+          drop-shadow(0 2px 4px var(--c-shadow));
 }
 
 .header-police-info {
@@ -97,19 +100,21 @@ onUnmounted(() => {
 }
 
 .police-name {
-  font-family: KaiTi, STKaiti, '楷体', serif;
-  font-size: 18px;
+  font-family: var(--font-serif);
+  font-size: 24px;
   font-weight: bold;
-  color: #fff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  color: var(--c-text-primary);
+  text-shadow: 0 0 10px rgba(var(--c-primary-rgb), 0.6),
+               0 2px 4px var(--c-shadow);
   letter-spacing: 2px;
 }
 
 .police-name-en {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  color: var(--c-text-secondary);
   letter-spacing: 1px;
   margin-top: 2px;
+  text-shadow: 0 1px 2px var(--c-shadow);
 }
 
 /* 中间 */
@@ -121,28 +126,25 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   z-index: 1;
-  padding: 12px 48px;
-  background: linear-gradient(135deg, rgba(0, 106, 206, 0.9) 0%, rgba(0, 82, 158, 0.8) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  clip-path: polygon(0% 0%, 100% 0%, 92% 100%, 8% 100%);
+  padding: 8px 48px;
 }
 
 .title-decoration {
   width: 150px;
   height: 30px;
+  --color: var(--c-accent);
 }
 
 .header-title {
-  font-family: KaiTi, STKaiti, '楷体', serif;
-  font-size: 28px;
+  font-family: var(--font-serif);
+  font-size: 36px;
   font-weight: bold;
-  color: #fff;
-  letter-spacing: 4px;
-  text-shadow: 0 0 10px rgba(59, 130, 246, 0.8),
-               0 0 20px rgba(59, 130, 246, 0.6),
-               0 2px 4px rgba(0, 0, 0, 0.5);
+  color: var(--c-text-primary);
+  letter-spacing: 6px;
+  text-shadow: 0 0 12px rgba(var(--c-accent-rgb), 0.8),
+               0 0 24px rgba(var(--c-primary-rgb), 0.6),
+               0 0 40px rgba(var(--c-primary-rgb), 0.3),
+               0 2px 4px var(--c-shadow);
   white-space: nowrap;
 }
 
@@ -150,23 +152,18 @@ onUnmounted(() => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
   z-index: 1;
 }
 
-.time-decoration {
-  width: 100px;
-  height: 30px;
-}
-
 .current-time {
-  font-family: 'Courier New', monospace;
-  font-size: 18px;
+  font-family: var(--font-mono);
+  font-size: 22px;
   font-weight: 600;
-  color: #fff;
+  color: var(--c-text-primary);
   letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(59, 130, 246, 0.8),
-               0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 10px rgba(var(--c-accent-rgb), 0.7),
+               0 0 20px rgba(var(--c-primary-rgb), 0.4),
+               0 2px 4px var(--c-shadow);
   white-space: nowrap;
   min-width: 150px;
   text-align: right;

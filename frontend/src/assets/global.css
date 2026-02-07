@@ -112,4 +112,30 @@ html {
   /* 背景图 */
   --bg-main: url(/main-bg.png);
   --bg-sub: url(/main-bg.png);
+  --bg-header: url(/header.png);
+
+  /* 表格颜色 (DataV ScrollBoard) - 基于 rgb(0, 153, 204) */
+  --c-table-rgb: 0, 153, 204;
+  --c-table-header-bg: rgba(0, 153, 204, 0.35);
+  --c-table-odd-bg: rgba(0, 153, 204, 0.15);
+  --c-table-even-bg: rgba(0, 153, 204, 0.25);
+
+  /* 面板/卡片背景 - 基于 rgb(1, 57, 113) */
+  --c-panel-rgb: 1, 57, 113;
+  --c-panel-bg: rgba(1, 57, 113, 0.8);
+  --c-panel-bg-light: rgba(1, 57, 113, 0.6);
+
+  /* 图表颜色 */
+  --c-chart-tooltip-bg: rgba(0, 30, 60, 0.9);
+  --c-chart-tooltip-border: rgba(0, 191, 255, 0.5);
+  --c-chart-axis: rgba(0, 191, 255, 0.3);
+  --c-chart-split: rgba(0, 191, 255, 0.1);
+  --c-chart-line-tongbi: #00E5FF;
+  --c-chart-line-huanbi: #FBBF24;
+
+  /* 控件颜色 */
+  --c-control-bg: rgba(0, 191, 255, 0.15);
+  --c-control-border: rgba(0, 191, 255, 0.3);
+  --c-control-hover-bg: rgba(0, 191, 255, 0.3);
+  --c-control-hover-border: rgba(0, 191, 255, 0.5);
 }

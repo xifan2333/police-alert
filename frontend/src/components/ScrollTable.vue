@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   // 表头配置
@@ -23,54 +23,89 @@ const props = defineProps({
   getRowStyle: {
     type: Function,
     default: (item, index) => ({
-      background: index % 2 === 0 ? 'rgba(var(--c-primary-light-rgb), 0.2)' : 'rgba(var(--c-primary-light-rgb), 0.1)',
+      background: index % 2 === 0 ? 'var(--c-table-even-bg)' : 'var(--c-table-odd-bg)',
       color: item.style?.font_color || 'var(--c-text-primary)'
     })
   },
-  // 是否启用自动滚动
+  // 是否启用自动轮播
   autoScroll: {
     type: Boolean,
     default: true
   },
-  // 滚动速度（毫秒）
-  scrollSpeed: {
+  // 轮播间隔（毫秒）
+  interval: {
     type: Number,
-    default: 30
+    default: 5000
+  },
+  // 每页显示行数
+  pageSize: {
+    type: Number,
+    default: 10
   }
 })
 
-const scrollContainer = ref(null)
-const scrollTimer = ref(null)
+const currentPage = ref(0)
+const carouselTimer = ref(null)
 const isPaused = ref(false)
+const isSliding = ref(false)
 
-// 自动滚动
-const startAutoScroll = () => {
-  if (!props.autoScroll) return
+// 计算总页数
+const totalPages = computed(() => {
+  if (!props.data || props.data.length === 0) return 0
+  return Math.ceil(props.data.length / props.pageSize)
+})
 
-  if (scrollTimer.value) {
-    clearInterval(scrollTimer.value)
-  }
+// 获取当前页数据
+const currentPageData = computed(() => {
+  if (!props.data || props.data.length === 0) return []
+  const start = currentPage.value * props.pageSize
+  const end = start + props.pageSize
+  return props.data.slice(start, end)
+})
 
-  scrollTimer.value = setInterval(() => {
-    if (!isPaused.value && scrollContainer.value) {
-      const container = scrollContainer.value
-      const scrollStep = 1
+// 切换到下一页
+const goToNextPage = () => {
+  if (totalPages.value <= 1 || isSliding.value) return
 
-      if (container.scrollTop + container.clientHeight >= container.scrollHeight) {
-        // 滚动到底部，回到顶部
-        container.scrollTop = 0
-      } else {
-        container.scrollTop += scrollStep
-      }
-    }
-  }, props.scrollSpeed)
+  isSliding.value = true
+
+  // 等待滑出动画完成后切换数据
+  setTimeout(() => {
+    currentPage.value = (currentPage.value + 1) % totalPages.value
+    isSliding.value = false
+  }, 400)
 }
 
-// 停止滚动
+// 切换到指定页
+const goToPage = (page) => {
+  if (page === currentPage.value || isSliding.value) return
+
+  isSliding.value = true
+
+  setTimeout(() => {
+    currentPage.value = page
+    isSliding.value = false
+  }, 400)
+}
+
+// 开始自动轮播
+const startAutoScroll = () => {
+  if (!props.autoScroll || totalPages.value <= 1) return
+
+  stopAutoScroll()
+
+  carouselTimer.value = setInterval(() => {
+    if (!isPaused.value) {
+      goToNextPage()
+    }
+  }, props.interval)
+}
+
+// 停止自动轮播
 const stopAutoScroll = () => {
-  if (scrollTimer.value) {
-    clearInterval(scrollTimer.value)
-    scrollTimer.value = null
+  if (carouselTimer.value) {
+    clearInterval(carouselTimer.value)
+    carouselTimer.value = null
   }
 }
 
@@ -83,19 +118,32 @@ const handleMouseLeave = () => {
   isPaused.value = false
 }
 
-// 重新启动滚动（用于数据更新后）
+// 重新启动轮播（用于数据更新后）
 const restartScroll = () => {
+  currentPage.value = 0
+  isSliding.value = false
   stopAutoScroll()
   setTimeout(() => {
     startAutoScroll()
   }, 500)
 }
 
+// 监听数据变化
+watch(() => props.data, () => {
+  currentPage.value = 0
+  isSliding.value = false
+  if (props.autoScroll) {
+    restartScroll()
+  }
+}, { deep: true })
+
 // 暴露方法给父组件
 defineExpose({
   restartScroll,
   stopAutoScroll,
-  startAutoScroll
+  startAutoScroll,
+  goToNextPage,
+  goToPage
 })
 
 onMounted(() => {
@@ -124,18 +172,17 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 表体 -->
+    <!-- 表体轮播容器 -->
     <div
-      ref="scrollContainer"
       class="table-body"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
     >
       <div
-        v-for="(item, rowIndex) in data"
+        v-for="(item, rowIndex) in currentPageData"
         :key="rowIndex"
         class="table-row"
-        :style="getRowStyle(item, rowIndex)"
+        :style="getRowStyle(item, currentPage * pageSize + rowIndex)"
       >
         <div
           v-for="(header, colIndex) in headers"
@@ -148,9 +195,22 @@ onUnmounted(() => {
             justifyContent: header.align === 'left' ? 'flex-start' : header.align === 'right' ? 'flex-end' : 'center'
           }"
         >
-          {{ getCellValue(item, colIndex) }}
+          <span class="cell-content" :class="{ 'fade-out': isSliding }">
+            {{ getCellValue(item, colIndex) }}
+          </span>
         </div>
       </div>
+    </div>
+
+    <!-- 分页指示器 -->
+    <div class="pagination-dots" v-if="totalPages > 1">
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        class="dot"
+        :class="{ active: currentPage === page - 1 }"
+        @click="goToPage(page - 1)"
+      />
     </div>
   </div>
 </template>
@@ -167,7 +227,7 @@ onUnmounted(() => {
 /* 表头 */
 .table-header {
   display: flex;
-  background: linear-gradient(180deg, rgba(var(--c-primary-light-rgb), 0.6) 0%, rgba(var(--c-primary-light-rgb), 0.4) 100%);
+  background: var(--c-table-header-bg);
   border-radius: 4px 4px 0 0;
   padding: 0 8px;
   height: 50px;
@@ -190,29 +250,10 @@ onUnmounted(() => {
 /* 表体 */
 .table-body {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(var(--c-primary-light-rgb), 0.5) rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: transparent;
-}
-
-.table-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.table-body::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-.table-body::-webkit-scrollbar-thumb {
-  background: rgba(var(--c-primary-light-rgb), 0.5);
-  border-radius: 3px;
-}
-
-.table-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(var(--c-primary-light-rgb), 0.7);
 }
 
 /* 表格行 */
@@ -222,10 +263,11 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--c-border-light);
   transition: background 0.2s;
   min-height: 80px;
+  flex-shrink: 0;
 }
 
 .table-row:hover {
-  background: rgba(var(--c-primary-light-rgb), 0.15) !important;
+  background: rgba(var(--c-table-rgb), 0.35) !important;
 }
 
 /* 表格单元格 */
@@ -236,7 +278,7 @@ onUnmounted(() => {
   align-items: center;
   text-align: center;
   word-break: break-word;
-  color: var(--c-text-primary);
+  color: inherit;
 }
 
 /* 内容单元格（支持换行） */
@@ -245,5 +287,47 @@ onUnmounted(() => {
   justify-content: flex-start;
   line-height: 1.6;
   white-space: normal;
+}
+
+/* 单元格内容 - 淡入淡出效果 */
+.cell-content {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  color: inherit;
+}
+
+.cell-content.fade-out {
+  opacity: 0;
+}
+
+/* 分页指示器 */
+.pagination-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 0;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(var(--c-table-rgb), 0.3);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.dot:hover {
+  background: rgba(var(--c-table-rgb), 0.5);
+  transform: scale(1.2);
+}
+
+.dot.active {
+  background: var(--c-primary);
+  box-shadow: 0 0 8px var(--c-primary);
+  transform: scale(1.2);
 }
 </style>

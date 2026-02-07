@@ -41,7 +41,7 @@ const getCellValue = (item, columnIndex) => {
 
 // 获取行样式
 const getRowStyle = (item, index) => ({
-  background: index % 2 === 0 ? 'rgba(var(--c-primary-rgb), 0.2)' : 'rgba(var(--c-primary-rgb), 0.1)',
+  background: index % 2 === 0 ? 'var(--c-table-even-bg)' : 'var(--c-table-odd-bg)',
   color: item.style?.font_color || 'var(--c-text-primary)'
 })
 
@@ -107,7 +107,8 @@ onMounted(() => {
           :getCellValue="getCellValue"
           :getRowStyle="getRowStyle"
           :autoScroll="true"
-          :scrollSpeed="30"
+          :interval="10000"
+          :pageSize="10"
         />
 
         <!-- 无数据 -->
@@ -142,7 +143,7 @@ onMounted(() => {
 
 .list-container {
   height: 100%;
-  background: var(--c-bg-panel);
+  background: var(--c-panel-bg);
   border: 1px solid var(--c-border);
   border-radius: 8px;
   padding: 16px;

@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ScrollTable from '@/components/ScrollTable.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
 import { formatDateTime } from '@/utils/datetime'
+import { applyRowStyles } from '@/utils/styleApplicator'
 
 // 响应式数据
 const rawData = ref([])
@@ -39,7 +40,7 @@ const getCellValue = (item, columnIndex) => {
 
 // 获取行样式
 const getRowStyle = (item, index) => ({
-  background: index % 2 === 0 ? 'rgba(var(--c-primary-rgb), 0.2)' : 'rgba(var(--c-primary-rgb), 0.1)',
+  background: index % 2 === 0 ? 'var(--c-table-even-bg)' : 'var(--c-table-odd-bg)',
   color: item.style?.font_color || 'var(--c-text-primary)'
 })
 
@@ -58,7 +59,12 @@ const fetchData = async () => {
     const result = await response.json()
 
     if (result.code === 200 && result.data) {
-      rawData.value = result.data.items || []
+      const items = result.data.items || []
+      const rules = result.data.rules || []
+
+      // 使用统一的样式应用函数
+      rawData.value = applyRowStyles(items, rules)
+
       // 数据加载完成后重启滚动
       setTimeout(() => {
         scrollTableRef.value?.restartScroll()
@@ -112,7 +118,8 @@ onMounted(() => {
             :getCellValue="getCellValue"
             :getRowStyle="getRowStyle"
             :autoScroll="true"
-            :scrollSpeed="30"
+            :interval="10000"
+            :pageSize="10"
           />
 
           <!-- 无数据 -->
@@ -179,7 +186,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--c-bg-panel);
+  background: var(--c-panel-bg);
   border: 1px solid var(--c-border);
   border-radius: 8px;
   padding: 16px;
@@ -200,7 +207,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   padding: 12px;
-  background: rgba(var(--c-primary-rgb), 0.1);
+  background: rgba(var(--c-table-rgb), 0.15);
   border-radius: 8px;
   border: 1px solid var(--c-border);
 }
@@ -229,8 +236,8 @@ onMounted(() => {
   padding: 6px 14px;
   font-size: 15px;
   color: var(--c-text-secondary);
-  background: rgba(var(--c-primary-rgb), 0.15);
-  border: 2px solid rgba(var(--c-primary-rgb), 0.3);
+  background: var(--c-control-bg);
+  border: 2px solid var(--c-control-border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -238,8 +245,8 @@ onMounted(() => {
 }
 
 .control-btn:hover {
-  background: rgba(var(--c-primary-rgb), 0.3);
-  border-color: rgba(var(--c-primary-rgb), 0.5);
+  background: var(--c-control-hover-bg);
+  border-color: var(--c-control-hover-border);
 }
 
 .control-btn.active {

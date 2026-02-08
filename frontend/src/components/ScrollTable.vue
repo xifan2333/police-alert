@@ -164,7 +164,8 @@ onUnmounted(() => {
         :key="index"
         class="header-cell"
         :style="{
-          width: header.width,
+          width: header.flex ? 'auto' : header.width,
+          flex: header.flex || 'none',
           textAlign: header.align || 'center'
         }"
       >
@@ -190,7 +191,8 @@ onUnmounted(() => {
           class="table-cell"
           :class="{ 'content-cell': header.wrap }"
           :style="{
-            width: header.width,
+            width: header.flex ? 'auto' : header.width,
+            flex: header.flex || 'none',
             textAlign: header.align || 'center',
             justifyContent: header.align === 'left' ? 'flex-start' : header.align === 'right' ? 'flex-end' : 'center'
           }"

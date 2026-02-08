@@ -37,6 +37,6 @@ artifacts/
 *.spec
 .claude/
 .ace-tool/
-
+backend/data.db
 
 

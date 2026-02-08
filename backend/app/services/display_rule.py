@@ -35,7 +35,8 @@ def get_rules_by_page(db: Session, page_code: str, table_code: Optional[str] = N
             "rule_type": rule.rule_type,
             "rule_name": rule.rule_name,
             "rule_config": json.loads(rule.rule_config),
-            "priority": rule.priority
+            "priority": rule.priority,
+            "description": rule.description
         })
 
     return result

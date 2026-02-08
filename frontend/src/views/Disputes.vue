@@ -12,16 +12,17 @@ const loading = ref(true)
 const error = ref(null)
 const filterStatus = ref(null) // null 表示显示所有数据
 const scrollTableRef = ref(null)
+const rulesDescription = ref('')
 
 // 表头配置
 const headers = [
-  { label: '事件名称', width: '180px', align: 'left' },
-  { label: '事件类型', width: '100px', align: 'center' },
-  { label: '事件内容', width: '400px', align: 'left', wrap: true },
-  { label: '事发时间', width: '150px', align: 'center' },
-  { label: '风险等级', width: '100px', align: 'center' },
-  { label: '责任民警', width: '100px', align: 'center' },
-  { label: '处置进度', width: '100px', align: 'center' }
+  { label: '事件名称', width: '280px', align: 'left' },
+  { label: '事件类型', width: '120px', align: 'center' },
+  { label: '事件内容', flex: 1, align: 'left', wrap: true },
+  { label: '事发时间', width: '180px', align: 'center' },
+  { label: '风险等级', width: '120px', align: 'center' },
+  { label: '责任民警', width: '120px', align: 'center' },
+  { label: '处置进度', width: '120px', align: 'center' }
 ]
 
 // 获取单元格值
@@ -64,6 +65,12 @@ const fetchData = async () => {
 
       // 使用统一的样式应用函数
       rawData.value = applyRowStyles(items, rules)
+
+      // 提取规则描述
+      const descriptions = rules
+        .filter(r => r.description)
+        .map(r => r.description)
+      rulesDescription.value = descriptions.join(' | ') || ''
 
       // 数据加载完成后重启滚动
       setTimeout(() => {
@@ -128,7 +135,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 筛选按钮（底部） -->
+        <!-- 底部控制栏 -->
         <div class="filter-controls">
           <div class="control-group">
             <div class="control-label">状态筛选</div>
@@ -152,6 +159,11 @@ onMounted(() => {
                 待盯办
               </button>
             </div>
+          </div>
+          <!-- 规则描述 -->
+          <div v-if="rulesDescription" class="control-group rules-group">
+            <div class="control-label">显示规则</div>
+            <div class="rules-text">{{ rulesDescription }}</div>
           </div>
         </div>
       </div>
@@ -254,5 +266,15 @@ onMounted(() => {
   background: var(--c-primary);
   border-color: var(--c-primary);
   box-shadow: 0 0 10px var(--c-primary);
+}
+
+.rules-group {
+  margin-left: auto;
+  margin-right: 80px;
+}
+
+.rules-text {
+  color: var(--c-text-secondary);
+  font-size: 14px;
 }
 </style>

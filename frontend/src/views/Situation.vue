@@ -9,6 +9,7 @@ import { applyDataVStyles } from '@/utils/styleApplicator'
 // 数据状态
 const mapMarkers = ref([])
 const isLoading = ref(true)
+const rulesDescription = ref('')
 
 // 地图类型筛选
 const selectedTypes = ref(['偷盗', '诈骗'])
@@ -164,6 +165,18 @@ const fetchData = async () => {
 
     // 统一处理所有表格：应用显示规则
     const displayRules = res.data.displayRules || {}
+
+    // 提取所有规则的描述
+    const allDescriptions = []
+    for (const tableCode in displayRules) {
+      const tableRules = displayRules[tableCode] || []
+      tableRules.forEach(rule => {
+        if (rule.description) {
+          allDescriptions.push(rule.description)
+        }
+      })
+    }
+    rulesDescription.value = allDescriptions.join(' | ') || ''
 
     for (const tableCode in dataRefMap) {
       const tableRef = dataRefMap[tableCode]
@@ -435,14 +448,15 @@ const initOverviewChart = () => {
     console.log('图表数据解析:', { categories, quantities, tongbiValues, huanbiValues })
 
     // 图表使用前端默认配色方案（不应用后端规则）
+    // 注意：ECharts 无法解析 CSS 变量，需要获取实际值
     const defaultColors = [
-      `rgba(var(--c-category-theft-rgb), 0.8)`,      // 偷盗 - 红色
-      `rgba(var(--c-category-fraud-rgb), 0.8)`,     // 诈骗 - 橙色
-      `rgba(var(--c-category-sex-related-rgb), 0.8)`, // 涉黄 - 紫色
-      `rgba(var(--c-category-gambling-rgb), 0.8)`,  // 涉赌 - 粉色
-      `rgba(var(--c-category-dispute-rgb), 0.8)`,   // 纠纷 - 绿色
-      `rgba(var(--c-category-injury-rgb), 0.8)`,    // 人身伤害 - 青色
-      `rgba(var(--c-success-rgb), 0.9)`             // 有效警情（总计）- 亮绿色
+      `rgba(${getCSSVariable('--c-category-theft-rgb')}, 0.8)`,      // 偷盗 - 红色
+      `rgba(${getCSSVariable('--c-category-fraud-rgb')}, 0.8)`,     // 诈骗 - 橙色
+      `rgba(${getCSSVariable('--c-category-sex-related-rgb')}, 0.8)`, // 涉黄 - 紫色
+      `rgba(${getCSSVariable('--c-category-gambling-rgb')}, 0.8)`,  // 涉赌 - 粉色
+      `rgba(${getCSSVariable('--c-category-dispute-rgb')}, 0.8)`,   // 纠纷 - 绿色
+      `rgba(${getCSSVariable('--c-category-injury-rgb')}, 0.8)`,    // 人身伤害 - 青色
+      `rgba(${getCSSVariable('--c-success-rgb')}, 0.9)`             // 有效警情（总计）- 亮绿色
     ]
     const barColors = quantities.map((_, index) => {
       return defaultColors[index] || 'rgba(0, 191, 255, 0.8)'
@@ -666,6 +680,11 @@ onMounted(() => {
                   </button>
                 </div>
               </div>
+              <!-- 显示规则 -->
+              <div v-if="rulesDescription" class="control-group rules-group">
+                <div class="control-label">显示规则</div>
+                <div class="rules-text">{{ rulesDescription }}</div>
+              </div>
             </div>
           </div>
         </dv-border-box-13>
@@ -876,6 +895,20 @@ onMounted(() => {
   background: var(--type-color, var(--c-primary));
   border-color: var(--type-color, var(--c-primary));
   box-shadow: 0 0 10px var(--type-color, var(--c-primary));
+}
+
+/* 显示规则样式 */
+.rules-group {
+  border-top: 1px solid var(--c-border);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.rules-text {
+  font-size: 14px;
+  color: var(--c-text-secondary);
+  padding: 8px 12px;
+  flex: 1;
 }
 
 .map-container :deep(.tdt-control-copyright) {

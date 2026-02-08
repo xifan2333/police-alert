@@ -11,17 +11,18 @@ const rawData = ref([])
 const loading = ref(true)
 const error = ref(null)
 const scrollTableRef = ref(null)
+const rulesDescription = ref('')
 
 // 表头配置
 const headers = [
-  { label: '案件编号', width: '180px', align: 'center' },
-  { label: '案件名称', width: '200px', align: 'left' },
-  { label: '案发时间', width: '150px', align: 'center' },
-  { label: '案件类型', width: '100px', align: 'center' },
-  { label: '风险问题', width: '250px', align: 'left', wrap: true },
-  { label: '整改期限', width: '150px', align: 'center' },
-  { label: '剩余天数', width: '100px', align: 'center' },
-  { label: '责任民警', width: '100px', align: 'center' }
+  { label: '案件编号', width: '200px', align: 'center' },
+  { label: '案件名称', width: '280px', align: 'left' },
+  { label: '案发时间', width: '180px', align: 'center' },
+  { label: '案件类型', width: '120px', align: 'center' },
+  { label: '风险问题', flex: 1, align: 'left', wrap: true },
+  { label: '整改期限', width: '180px', align: 'center' },
+  { label: '剩余天数', width: '120px', align: 'center' },
+  { label: '责任民警', width: '120px', align: 'center' }
 ]
 
 // 获取单元格值
@@ -61,6 +62,12 @@ const fetchData = async () => {
       // 使用统一的样式应用函数
       rawData.value = applyRowStyles(items, rules)
 
+      // 提取规则描述
+      const descriptions = rules
+        .filter(r => r.description)
+        .map(r => r.description)
+      rulesDescription.value = descriptions.join(' | ') || ''
+
       // 数据加载完成后重启滚动
       setTimeout(() => {
         scrollTableRef.value?.restartScroll()
@@ -88,32 +95,40 @@ onMounted(() => {
 
     <div class="content-wrapper">
       <div class="list-container">
-        <!-- 加载状态 -->
-        <div v-if="loading" class="h-full flex items-center justify-center">
-          <div class="text-xl text-white">数据加载中...</div>
+        <div class="table-wrapper">
+          <!-- 加载状态 -->
+          <div v-if="loading" class="h-full flex items-center justify-center">
+            <div class="text-xl text-white">数据加载中...</div>
+          </div>
+
+          <!-- 错误状态 -->
+          <div v-else-if="error" class="h-full flex items-center justify-center">
+            <div class="text-xl text-red-400">{{ error }}</div>
+          </div>
+
+          <!-- 滚动表格 -->
+          <ScrollTable
+            v-else-if="rawData.length > 0"
+            ref="scrollTableRef"
+            :headers="headers"
+            :data="rawData"
+            :getCellValue="getCellValue"
+            :getRowStyle="getRowStyle"
+            :autoScroll="true"
+            :interval="10000"
+            :pageSize="10"
+          />
+
+          <!-- 无数据 -->
+          <div v-else class="h-full flex items-center justify-center">
+            <div class="text-xl text-gray-400">暂无数据</div>
+          </div>
         </div>
 
-        <!-- 错误状态 -->
-        <div v-else-if="error" class="h-full flex items-center justify-center">
-          <div class="text-xl text-red-400">{{ error }}</div>
-        </div>
-
-        <!-- 滚动表格 -->
-        <ScrollTable
-          v-else-if="rawData.length > 0"
-          ref="scrollTableRef"
-          :headers="headers"
-          :data="rawData"
-          :getCellValue="getCellValue"
-          :getRowStyle="getRowStyle"
-          :autoScroll="true"
-          :interval="10000"
-          :pageSize="10"
-        />
-
-        <!-- 无数据 -->
-        <div v-else class="h-full flex items-center justify-center">
-          <div class="text-xl text-gray-400">暂无数据</div>
+        <!-- 规则描述 -->
+        <div v-if="rulesDescription" class="rules-description">
+          <span class="rules-label">显示规则：</span>
+          <span class="rules-text">{{ rulesDescription }}</span>
         </div>
       </div>
     </div>
@@ -149,5 +164,34 @@ onMounted(() => {
   padding: 16px;
   box-shadow: 0 4px 12px var(--c-shadow);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rules-description {
+  flex-shrink: 0;
+  margin-top: 12px;
+  padding: 10px 16px;
+  padding-right: 80px;
+  background: rgba(var(--c-table-rgb), 0.15);
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  font-size: 14px;
+}
+
+.rules-label {
+  color: var(--c-accent);
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.rules-text {
+  color: var(--c-text-secondary);
 }
 </style>

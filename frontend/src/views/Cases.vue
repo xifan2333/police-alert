@@ -13,6 +13,11 @@ const error = ref(null)
 const scrollTableRef = ref(null)
 const rulesDescription = ref('')
 
+// 分页相关
+const currentPage = ref(1)
+const pageSize = 10
+const total = ref(0)
+
 // 表头配置
 const headers = [
   { label: '案件编号', width: '200px', align: 'center' },
@@ -47,31 +52,33 @@ const getRowStyle = (item, index) => ({
 })
 
 // 加载数据
-const fetchData = async () => {
+const fetchData = async (page = 1) => {
   loading.value = true
   error.value = null
 
   try {
-    const response = await fetch('/api/v1/data/risk-supervision?page=1&page_size=50&include_rules=true')
+    const includeRules = page === 1 ? '&include_rules=true' : ''
+    const response = await fetch(`/api/v1/data/risk-supervision?page=${page}&page_size=${pageSize}${includeRules}`)
     const result = await response.json()
 
     if (result.code === 200 && result.data) {
       const items = result.data.items || []
       const rules = result.data.rules || []
 
+      // 更新总数
+      total.value = result.data.total || 0
+      currentPage.value = page
+
       // 使用统一的样式应用函数
       rawData.value = applyRowStyles(items, rules)
 
-      // 提取规则描述
-      const descriptions = rules
-        .filter(r => r.description)
-        .map(r => r.description)
-      rulesDescription.value = descriptions.join(' | ') || ''
-
-      // 数据加载完成后重启滚动
-      setTimeout(() => {
-        scrollTableRef.value?.restartScroll()
-      }, 500)
+      // 只在首次加载时提取规则描述
+      if (page === 1 && rules.length > 0) {
+        const descriptions = rules
+          .filter(r => r.description)
+          .map(r => r.description)
+        rulesDescription.value = descriptions.join(' | ') || ''
+      }
     } else {
       throw new Error('数据格式错误')
     }
@@ -84,8 +91,13 @@ const fetchData = async () => {
   }
 }
 
+// 处理页码变化
+const handlePageChange = (page) => {
+  fetchData(page)
+}
+
 onMounted(() => {
-  fetchData()
+  fetchData(1)
 })
 </script>
 
@@ -116,7 +128,12 @@ onMounted(() => {
             :getRowStyle="getRowStyle"
             :autoScroll="true"
             :interval="10000"
-            :pageSize="10"
+            :pageSize="pageSize"
+            :remote="true"
+            :page="currentPage"
+            :total="total"
+            :loading="loading"
+            @page-change="handlePageChange"
           />
 
           <!-- 无数据 -->
@@ -182,7 +199,7 @@ onMounted(() => {
   background: rgba(var(--c-table-rgb), 0.15);
   border-radius: 6px;
   border: 1px solid var(--c-border);
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .rules-label {

@@ -83,7 +83,7 @@ onMounted(() => {
 }
 
 .rules-title {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--c-primary-light);
   letter-spacing: 2px;
@@ -101,7 +101,7 @@ onMounted(() => {
 }
 
 .rules-text {
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.8;
   color: var(--c-text-primary);
   white-space: pre-wrap;

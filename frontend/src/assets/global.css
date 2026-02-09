@@ -97,6 +97,7 @@ html {
   /* 灰色/中性色 */
   --c-gray-400: #9ca3af;
   --c-gray-500: #6b7280;
+  --c-gray-500-rgb: 107, 114, 128;
 
   /* 文字颜色补充 */
   --c-text-tertiary: #A8B2C5;
@@ -114,16 +115,20 @@ html {
   --bg-sub: url(/main-bg.png);
   --bg-header: url(/header.png);
 
-  /* 表格颜色 (DataV ScrollBoard) - 基于 rgb(0, 153, 204) */
-  --c-table-rgb: 0, 153, 204;
-  --c-table-header-bg: rgba(0, 153, 204, 0.35);
-  --c-table-odd-bg: rgba(0, 153, 204, 0.15);
-  --c-table-even-bg: rgba(0, 153, 204, 0.25);
+  /* 地图标签颜色（反色滤镜下需要深色文字白色背景） */
+  --c-map-label-bg: #ffffff;
+  --c-map-label-text: #1e293b;
 
-  /* 面板/卡片背景 - 基于 rgb(1, 57, 113) */
-  --c-panel-rgb: 1, 57, 113;
-  --c-panel-bg: rgba(1, 57, 113, 0.8);
-  --c-panel-bg-light: rgba(1, 57, 113, 0.6);
+  /* 表格颜色 (DataV ScrollBoard) - 青蓝色调，取自主背景图 */
+  --c-table-rgb: 0, 230, 255;
+  --c-table-header-bg: rgba(0, 230, 255, 0.4);
+  --c-table-odd-bg: rgba(0, 230, 255, 0.18);
+  --c-table-even-bg: rgba(0, 230, 255, 0.3);
+
+  /* 面板/卡片背景 - 青蓝色调，取自主背景图 */
+  --c-panel-rgb: 0, 80, 140;
+  --c-panel-bg: rgba(0, 80, 140, 0.8);
+  --c-panel-bg-light: rgba(0, 80, 140, 0.6);
 
   /* 图表颜色 */
   --c-chart-tooltip-bg: rgba(0, 30, 60, 0.9);

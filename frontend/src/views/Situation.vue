@@ -6,6 +6,18 @@ import FloatingButton from '@/components/FloatingButton.vue'
 import { getSituationData } from '@/api/data'
 import { applyDataVStyles } from '@/utils/styleApplicator'
 
+// 获取 CSS 变量值
+const getCSSVariable = (name) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+// 获取表格通用颜色配置
+const getTableColors = () => ({
+  headerBGC: `rgba(${getCSSVariable('--c-table-rgb')}, 0.4)`,
+  oddRowBGC: `rgba(${getCSSVariable('--c-table-rgb')}, 0.18)`,
+  evenRowBGC: `rgba(${getCSSVariable('--c-table-rgb')}, 0.3)`
+})
+
 // 数据状态
 const mapMarkers = ref([])
 const isLoading = ref(true)
@@ -30,13 +42,14 @@ const timePeriods = [
   { label: '年', value: 'year' }
 ]
 
+// 表格配置 - 初始化时使用占位符，onMounted 时更新为实际颜色
 const policeClassification = ref({
   header: ['名称', '数量', '同比', '环比'],
   data: [],
   rowNum: 7,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   columnWidth: [120, 80, 80, 80],
   align: ['center', 'center', 'center', 'center']
 })
@@ -45,9 +58,9 @@ const theftTraditional = ref({
   header: ['地点', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   align: ['center', 'center']
 })
 
@@ -55,9 +68,9 @@ const telecomFraud = ref({
   header: ['小区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   align: ['center', 'center']
 })
 
@@ -65,9 +78,9 @@ const viceCases = ref({
   header: ['小区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   align: ['center', 'center']
 })
 
@@ -75,9 +88,9 @@ const disputeCases = ref({
   header: ['社区', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   align: ['center', 'center']
 })
 
@@ -85,9 +98,9 @@ const fightCases = ref({
   header: ['区域', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   align: ['center', 'center']
 })
 
@@ -95,9 +108,9 @@ const gamblingCases = ref({
   header: ['地点', '数量'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   align: ['center', 'center']
 })
 
@@ -105,12 +118,30 @@ const repeatAlarms = ref({
   header: ['地点', '报警次数', '最近报警时间'],
   data: [],
   rowNum: 5,
-  headerBGC: 'rgba(0, 153, 204, 0.35)',
-  oddRowBGC: 'rgba(0, 153, 204, 0.15)',
-  evenRowBGC: 'rgba(0, 153, 204, 0.25)',
+  headerBGC: '',
+  oddRowBGC: '',
+  evenRowBGC: '',
   columnWidth: [200, 100, 120],
   align: ['center', 'center', 'center']
 })
+
+// 初始化表格颜色
+const initTableColors = () => {
+  const colors = getTableColors()
+  const tables = [
+    policeClassification,
+    theftTraditional,
+    telecomFraud,
+    viceCases,
+    disputeCases,
+    fightCases,
+    gamblingCases,
+    repeatAlarms
+  ]
+  tables.forEach(table => {
+    table.value = { ...table.value, ...colors }
+  })
+}
 
 // 图表实例
 const overviewChartInstance = ref(null)
@@ -224,7 +255,7 @@ const mapOverlays = ref([])
 // 获取类型颜色
 const getTypeColor = (alertType) => {
   const type = availableTypes.find(t => t.value === alertType)
-  return type ? type.color : '#00BFFF'
+  return type ? type.color : getCSSVariable('--c-primary')
 }
 
 // 初始化天地图
@@ -304,12 +335,12 @@ const updateMapMarkers = () => {
       offset: new T.Point(0, -30) // 向上偏移，避免遮挡 Marker
     })
 
-    // 设置样式
+    // 设置样式（地图标签需要在反色滤镜下可见，使用深色文字和白色背景）
     label.setFontSize(14)
-    label.setFontColor('#1e293b')
-    label.setBackgroundColor('#ffffff')
+    label.setFontColor(getCSSVariable('--c-map-label-text'))
+    label.setBackgroundColor(getCSSVariable('--c-map-label-bg'))
     label.setBorderLine(2)
-    label.setBorderColor('#00BFFF')
+    label.setBorderColor(getCSSVariable('--c-primary'))
     label.setOpacity(0.95)
 
     // 添加到地图
@@ -389,11 +420,6 @@ watch(timePeriod, (newVal) => {
   console.log('时间周期变化:', newVal)
   fetchData()
 })
-
-// 获取 CSS 变量值
-const getCSSVariable = (name) => {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-}
 
 // 初始化总览图表（警情分类总览）
 const initOverviewChart = () => {
@@ -603,6 +629,9 @@ const handleResize = () => {
 }
 
 onMounted(() => {
+  // 初始化表格颜色（从 CSS 变量获取）
+  initTableColors()
+
   fetchData().then(() => {
     initMap()
     initOverviewChart()
@@ -860,7 +889,7 @@ onMounted(() => {
 }
 
 .control-label {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--c-accent);
   white-space: nowrap;
@@ -875,7 +904,7 @@ onMounted(() => {
 
 .control-btn {
   padding: 6px 12px;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--c-text-secondary);
   background: var(--c-control-bg);
   border: 2px solid var(--c-control-border);
@@ -905,7 +934,7 @@ onMounted(() => {
 }
 
 .rules-text {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--c-text-secondary);
   padding: 8px 12px;
   flex: 1;
@@ -970,6 +999,20 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+/* DataV ScrollBoard 字体大小调整 */
+:deep(.dv-scroll-board) {
+  font-size: 18px;
+}
+
+:deep(.dv-scroll-board .header) {
+  font-size: 20px !important;
+  font-weight: 600;
+}
+
+:deep(.dv-scroll-board .rows .row-item) {
+  font-size: 18px !important;
 }
 
 /* 响应式调整 - 针对超大屏幕优化 */

@@ -41,49 +41,106 @@ const props = defineProps({
   pageSize: {
     type: Number,
     default: 10
+  },
+  // 是否使用远程分页（后端翻页）
+  remote: {
+    type: Boolean,
+    default: false
+  },
+  // 当前页码（远程分页时由父组件控制，1-indexed）
+  page: {
+    type: Number,
+    default: 1
+  },
+  // 总记录数（远程分页时必须提供）
+  total: {
+    type: Number,
+    default: 0
+  },
+  // 是否正在加载（远程分页时使用）
+  loading: {
+    type: Boolean,
+    default: false
   }
 })
 
-const currentPage = ref(0)
+const emit = defineEmits(['page-change'])
+
+// 内部页码状态（仅用于本地分页模式，0-indexed）
+const localPage = ref(0)
 const carouselTimer = ref(null)
 const isPaused = ref(false)
 const isSliding = ref(false)
 
+// 当前页码（0-indexed）
+const currentPage = computed(() => {
+  if (props.remote) {
+    return props.page - 1 // 父组件传入1-indexed，转为0-indexed
+  }
+  return localPage.value
+})
+
 // 计算总页数
 const totalPages = computed(() => {
-  if (!props.data || props.data.length === 0) return 0
-  return Math.ceil(props.data.length / props.pageSize)
+  if (props.remote) {
+    // 远程分页：根据 total 计算
+    if (props.total <= 0) return 0
+    return Math.ceil(props.total / props.pageSize)
+  } else {
+    // 本地分页：根据 data 长度计算
+    if (!props.data || props.data.length === 0) return 0
+    return Math.ceil(props.data.length / props.pageSize)
+  }
 })
 
 // 获取当前页数据
 const currentPageData = computed(() => {
   if (!props.data || props.data.length === 0) return []
-  const start = currentPage.value * props.pageSize
-  const end = start + props.pageSize
-  return props.data.slice(start, end)
+  if (props.remote) {
+    // 远程分页：data 就是当前页数据
+    return props.data
+  } else {
+    // 本地分页：从 data 中切片
+    const start = currentPage.value * props.pageSize
+    const end = start + props.pageSize
+    return props.data.slice(start, end)
+  }
 })
 
 // 切换到下一页
 const goToNextPage = () => {
-  if (totalPages.value <= 1 || isSliding.value) return
+  if (totalPages.value <= 1 || isSliding.value || props.loading) return
 
   isSliding.value = true
+  const nextPage = (currentPage.value + 1) % totalPages.value
 
   // 等待滑出动画完成后切换数据
   setTimeout(() => {
-    currentPage.value = (currentPage.value + 1) % totalPages.value
+    if (props.remote) {
+      // 远程分页：通知父组件切换页码
+      emit('page-change', nextPage + 1) // 转回1-indexed
+    } else {
+      // 本地分页：直接更新内部状态
+      localPage.value = nextPage
+    }
     isSliding.value = false
   }, 400)
 }
 
 // 切换到指定页
 const goToPage = (page) => {
-  if (page === currentPage.value || isSliding.value) return
+  if (page === currentPage.value || isSliding.value || props.loading) return
 
   isSliding.value = true
 
   setTimeout(() => {
-    currentPage.value = page
+    if (props.remote) {
+      // 远程分页：通知父组件切换页码
+      emit('page-change', page + 1) // 转回1-indexed
+    } else {
+      // 本地分页：直接更新内部状态
+      localPage.value = page
+    }
     isSliding.value = false
   }, 400)
 }
@@ -120,7 +177,9 @@ const handleMouseLeave = () => {
 
 // 重新启动轮播（用于数据更新后）
 const restartScroll = () => {
-  currentPage.value = 0
+  if (!props.remote) {
+    localPage.value = 0
+  }
   isSliding.value = false
   stopAutoScroll()
   setTimeout(() => {
@@ -128,14 +187,28 @@ const restartScroll = () => {
   }, 500)
 }
 
-// 监听数据变化
+// 监听数据变化（仅本地分页模式）
 watch(() => props.data, () => {
-  currentPage.value = 0
-  isSliding.value = false
-  if (props.autoScroll) {
-    restartScroll()
+  if (!props.remote) {
+    // 本地分页：数据变化时重置页码
+    localPage.value = 0
+    isSliding.value = false
+    if (props.autoScroll) {
+      restartScroll()
+    }
   }
 }, { deep: true })
+
+// 监听 total 变化（远程分页模式）
+watch(() => props.total, (newTotal, oldTotal) => {
+  if (props.remote && props.autoScroll) {
+    const newTotalPages = newTotal > 0 ? Math.ceil(newTotal / props.pageSize) : 0
+    // 当 totalPages 从 0 或 1 变为 > 1 时启动轮播
+    if (newTotalPages > 1 && !carouselTimer.value) {
+      startAutoScroll()
+    }
+  }
+})
 
 // 暴露方法给父组件
 defineExpose({
@@ -183,7 +256,7 @@ onUnmounted(() => {
         v-for="(item, rowIndex) in currentPageData"
         :key="rowIndex"
         class="table-row"
-        :style="getRowStyle(item, currentPage * pageSize + rowIndex)"
+        :style="getRowStyle(item, props.remote ? rowIndex : currentPage * props.pageSize + rowIndex)"
       >
         <div
           v-for="(header, colIndex) in headers"
@@ -241,7 +314,7 @@ onUnmounted(() => {
 .header-cell {
   padding: 0 8px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 22px;
   color: var(--c-text-primary);
   display: flex;
   align-items: center;
@@ -275,7 +348,7 @@ onUnmounted(() => {
 /* 表格单元格 */
 .table-cell {
   padding: 0 8px;
-  font-size: 14px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   text-align: center;

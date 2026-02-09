@@ -210,7 +210,7 @@ const addCondition = () => {
   ruleForm.value.conditions.push({
     operator: 'eq',
     value: '',
-    font_color: '#f5222d'
+    font_color: 'var(--c-danger)'
   })
 }
 
@@ -587,9 +587,9 @@ const handleTabChange = (tab) => {
 }
 
 .admin-container {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
-  background: var(--c-bg-dialog);
+  background: var(--c-panel-bg);
   border: 1px solid var(--c-border);
   border-radius: 8px;
   overflow: hidden;
@@ -701,7 +701,7 @@ const handleTabChange = (tab) => {
 
 .btn-primary {
   background: var(--c-primary);
-  color: #fff;
+  color: var(--c-text-primary);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -818,7 +818,7 @@ const handleTabChange = (tab) => {
 }
 
 .btn-toggle.disabled {
-  background: rgba(107, 114, 128, 0.3);
+  background: rgba(var(--c-gray-500-rgb), 0.3);
   color: var(--c-gray-400);
 }
 

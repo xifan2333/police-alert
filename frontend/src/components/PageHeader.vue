@@ -137,7 +137,7 @@ onUnmounted(() => {
 
 .header-title {
   font-family: var(--font-serif);
-  font-size: 36px;
+  font-size: 42px;
   font-weight: bold;
   color: var(--c-text-primary);
   letter-spacing: 6px;

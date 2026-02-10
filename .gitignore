@@ -38,4 +38,5 @@ artifacts/
 .claude/
 .ace-tool/
 backend/data.db
+*.xlsx
 .ace-tool/index.json

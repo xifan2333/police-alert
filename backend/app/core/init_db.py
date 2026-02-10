@@ -56,7 +56,7 @@ def init_display_rules(db):
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description="根据剩余天数设置颜色：≤3天红色，≤7天黄色"
+            description='剩余天数：≤3天<span style="color:#f5222d">红色</span>，≤7天<span style="color:#faad14">黄色</span>'
         ),
         # 矛盾纠纷管理 - 风险等级颜色规则
         DisplayRule(
@@ -86,7 +86,7 @@ def init_display_rules(db):
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description="根据风险等级设置颜色：高-红色，中-黄色，低-绿色"
+            description='风险等级：高-<span style="color:#f5222d">红色</span>，中-<span style="color:#faad14">黄色</span>，低-<span style="color:#52c41a">绿色</span>'
         ),
         # 警情态势 - 警情分类总览 - 数量高亮
         DisplayRule(
@@ -111,7 +111,7 @@ def init_display_rules(db):
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description="警情数量≥50红色，≥30黄色"
+            description='警情数量：≥50<span style="color:#f5222d">红色</span>，≥30<span style="color:#faad14">黄色</span>'
         ),
         # 警情态势 - 偷盗地点 - 数量高亮
         DisplayRule(
@@ -136,7 +136,7 @@ def init_display_rules(db):
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description="偷盗数量≥10红色，≥5黄色"
+            description='偷盗数量：≥10<span style="color:#f5222d">红色</span>，≥5<span style="color:#faad14">黄色</span>'
         ),
         # 警情态势 - 诈骗小区 - 数量高亮
         DisplayRule(
@@ -161,7 +161,7 @@ def init_display_rules(db):
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description="诈骗数量≥8红色，≥4黄色"
+            description='诈骗数量：≥8<span style="color:#f5222d">红色</span>，≥4<span style="color:#faad14">黄色</span>'
         ),
         # 警情态势 - 重复报警 - 次数高亮
         DisplayRule(
@@ -186,7 +186,7 @@ def init_display_rules(db):
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description="报警次数≥5红色，≥3黄色"
+            description='报警次数：≥5<span style="color:#f5222d">红色</span>，≥3<span style="color:#faad14">黄色</span>'
         )
     ]
 

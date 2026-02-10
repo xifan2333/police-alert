@@ -159,7 +159,7 @@ onMounted(() => {
         <!-- 规则描述 -->
         <div v-if="rulesDescription" class="rules-description">
           <span class="rules-label">显示规则：</span>
-          <span class="rules-text">{{ rulesDescription }}</span>
+          <span class="rules-text" v-html="rulesDescription"></span>
         </div>
       </div>
     </div>

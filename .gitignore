@@ -38,5 +38,4 @@ artifacts/
 .claude/
 .ace-tool/
 backend/data.db
-
-
+.ace-tool/index.json

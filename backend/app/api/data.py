@@ -13,12 +13,16 @@ router = APIRouter()
 def get_risk_supervision(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    case_type: Optional[str] = Query(None, description="案件类型筛选"),
+    risk_type: Optional[str] = Query(None, description="风险类型筛选"),
+    officer_name: Optional[str] = Query(None, description="责任民警筛选"),
+    sort_order: str = Query("asc", regex="^(asc|desc)$", description="排序方向"),
     include_rules: bool = Query(True, description="是否包含规则"),
     db: Session = Depends(get_db)
 ):
     """获取执法问题风险盯办列表"""
     items, total, rules = risk_supervision.list_risk_supervision(
-        db, page, page_size, include_rules
+        db, page, page_size, case_type, risk_type, officer_name, sort_order, include_rules
     )
 
     return {

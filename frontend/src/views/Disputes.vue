@@ -11,8 +11,15 @@ const rawData = ref([])
 const loading = ref(true)
 const error = ref(null)
 const filterStatus = ref(null) // null 表示显示所有数据
+const filterRiskLevel = ref(null) // 风险等级筛选
 const scrollTableRef = ref(null)
 const rulesDescription = ref('')
+
+// Dropdown 状态
+const dropdowns = ref({
+  riskLevel: false,
+  status: false
+})
 
 // 分页相关
 const currentPage = ref(1)
@@ -74,6 +81,9 @@ const fetchData = async (page = 1) => {
     if (filterStatus.value) {
       url += `&status=${filterStatus.value}`
     }
+    if (filterRiskLevel.value) {
+      url += `&risk_level=${filterRiskLevel.value}`
+    }
 
     const response = await fetch(url)
     const result = await response.json()
@@ -114,11 +124,23 @@ const handlePageChange = (page) => {
 }
 
 // 筛选按钮点击
-const handleFilter = (status) => {
-  filterStatus.value = status
+const handleFilter = (type, value) => {
+  if (type === 'status') filterStatus.value = value
+  else if (type === 'risk_level') filterRiskLevel.value = value
   currentPage.value = 1
   total.value = 0
   fetchData(1)
+  // 关闭所有 dropdown
+  Object.keys(dropdowns.value).forEach(key => dropdowns.value[key] = false)
+}
+
+// 切换 dropdown
+const toggleDropdown = (name) => {
+  dropdowns.value[name] = !dropdowns.value[name]
+  // 关闭其他 dropdown
+  Object.keys(dropdowns.value).forEach(key => {
+    if (key !== name) dropdowns.value[key] = false
+  })
 }
 
 onMounted(() => {
@@ -170,32 +192,39 @@ onMounted(() => {
 
         <!-- 底部控制栏 -->
         <div class="filter-controls">
-          <!-- 规则描述 -->
-          <div v-if="rulesDescription" class="control-group">
-            <div class="control-label">显示规则</div>
-            <div class="rules-text" v-html="rulesDescription"></div>
+          <!-- 左侧：规则描述 -->
+          <div v-if="rulesDescription" class="rules-section">
+            <span class="rules-label">显示规则：</span>
+            <span class="rules-text" v-html="rulesDescription"></span>
           </div>
-          <div class="control-group filter-group">
-            <div class="control-label">状态筛选</div>
-            <div class="control-buttons">
-              <button
-                @click="handleFilter(null)"
-                :class="['control-btn', { active: filterStatus === null }]"
-              >
-                默认
+
+          <!-- 右侧：操作按钮 -->
+          <div class="actions-section">
+            <!-- 风险等级 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('riskLevel')">
+                风险等级: {{ filterRiskLevel || '全部' }}
+                <span class="arrow">▲</span>
               </button>
-              <button
-                @click="handleFilter('待化解')"
-                :class="['control-btn', { active: filterStatus === '待化解' }]"
-              >
-                待化解
+              <div v-show="dropdowns.riskLevel" class="dropdown-menu">
+                <div @click="handleFilter('risk_level', null)" :class="['dropdown-item', { active: filterRiskLevel === null }]">全部</div>
+                <div @click="handleFilter('risk_level', '高')" :class="['dropdown-item', { active: filterRiskLevel === '高' }]">高</div>
+                <div @click="handleFilter('risk_level', '中')" :class="['dropdown-item', { active: filterRiskLevel === '中' }]">中</div>
+                <div @click="handleFilter('risk_level', '低')" :class="['dropdown-item', { active: filterRiskLevel === '低' }]">低</div>
+              </div>
+            </div>
+
+            <!-- 状态筛选 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('status')">
+                状态: {{ filterStatus || '全部' }}
+                <span class="arrow">▲</span>
               </button>
-              <button
-                @click="handleFilter('待关注')"
-                :class="['control-btn', { active: filterStatus === '待关注' }]"
-              >
-                待关注
-              </button>
+              <div v-show="dropdowns.status" class="dropdown-menu">
+                <div @click="handleFilter('status', null)" :class="['dropdown-item', { active: filterStatus === null }]">全部</div>
+                <div @click="handleFilter('status', '待化解')" :class="['dropdown-item', { active: filterStatus === '待化解' }]">待化解</div>
+                <div @click="handleFilter('status', '待关注')" :class="['dropdown-item', { active: filterStatus === '待关注' }]">待关注</div>
+              </div>
             </div>
           </div>
         </div>
@@ -250,6 +279,8 @@ onMounted(() => {
 .filter-controls {
   flex-shrink: 0;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 16px;
   padding: 12px;
   background: rgba(var(--c-table-rgb), 0.15);
@@ -257,27 +288,43 @@ onMounted(() => {
   border: 1px solid var(--c-border);
 }
 
-.control-group {
+.rules-section {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
-.control-label {
+.rules-label {
   font-size: 22px;
   font-weight: 600;
   color: var(--c-accent);
   white-space: nowrap;
-  margin-right: 4px;
 }
 
-.control-buttons {
+.rules-text {
+  font-size: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rules-text :deep(span) {
+  color: inherit;
+}
+
+.actions-section {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-right: 80px;
 }
 
-.control-btn {
+.dropdown-wrapper {
+  position: relative;
+}
+
+.dropdown-btn {
   padding: 6px 14px;
   font-size: 22px;
   color: var(--c-text-secondary);
@@ -287,27 +334,53 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.control-btn:hover {
+.dropdown-btn:hover {
   background: var(--c-control-hover-bg);
   border-color: var(--c-control-hover-border);
 }
 
-.control-btn.active {
+.dropdown-btn .arrow {
+  font-size: 14px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  background: var(--c-control-bg);
+  border: 2px solid var(--c-control-border);
+  border-radius: 6px;
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 100%;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-item {
+  padding: 8px 14px;
+  font-size: 22px;
+  color: var(--c-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background: var(--c-control-hover-bg);
+  color: var(--c-primary);
+}
+
+.dropdown-item.active {
   color: var(--c-text-primary);
   background: var(--c-primary);
   border-color: var(--c-primary);
   box-shadow: 0 0 10px var(--c-primary);
-}
-
-.filter-group {
-  margin-left: auto;
-  margin-right: 80px;
-}
-
-.rules-text {
-  color: var(--c-text-secondary);
-  font-size: 22px;
+  font-weight: bold;
 }
 </style>

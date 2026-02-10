@@ -4,13 +4,17 @@ from app.models.risk_supervision import RiskSupervision
 from app.services.display_rule import get_rules_by_page, apply_color_rules
 from app.utils.timezone import calc_days_remaining
 import json
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 
 def list_risk_supervision(
     db: Session,
     page: int = 1,
     page_size: int = 50,
+    case_type: Optional[str] = None,
+    risk_type: Optional[str] = None,
+    officer_name: Optional[str] = None,
+    sort_order: str = "asc",
     include_rules: bool = True
 ) -> Tuple[List[Dict[str, Any]], int, List[Dict[str, Any]]]:
     """
@@ -20,19 +24,40 @@ def list_risk_supervision(
         db: 数据库会话
         page: 页码
         page_size: 每页数量
+        case_type: 案件类型筛选
+        risk_type: 风险类型筛选
+        officer_name: 责任民警筛选
+        sort_order: 排序方向 (asc/desc)
         include_rules: 是否包含规则
 
     Returns:
         (items, total, rules)
     """
-    # 查询总数
-    total = db.query(RiskSupervision).count()
+    # 构建查询
+    query = db.query(RiskSupervision)
 
-    # 查询数据（按 deadline 升序，case_time 降序）
-    query = db.query(RiskSupervision).order_by(
-        RiskSupervision.deadline.asc(),
-        RiskSupervision.case_time.desc()
-    )
+    # 筛选条件
+    if case_type:
+        query = query.filter(RiskSupervision.case_type == case_type)
+    if risk_type:
+        query = query.filter(RiskSupervision.risk_type == risk_type)
+    if officer_name:
+        query = query.filter(RiskSupervision.officer_name == officer_name)
+
+    # 查询总数
+    total = query.count()
+
+    # 排序（deadline 等价于 days_remaining）
+    if sort_order == "desc":
+        query = query.order_by(
+            RiskSupervision.deadline.desc(),
+            RiskSupervision.case_time.desc()
+        )
+    else:
+        query = query.order_by(
+            RiskSupervision.deadline.asc(),
+            RiskSupervision.case_time.desc()
+        )
 
     # 分页
     offset = (page - 1) * page_size

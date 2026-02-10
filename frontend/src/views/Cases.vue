@@ -13,6 +13,18 @@ const error = ref(null)
 const scrollTableRef = ref(null)
 const rulesDescription = ref('')
 
+// 筛选和排序
+const filterCaseType = ref(null)
+const filterRiskType = ref(null)
+const filterOfficer = ref(null)
+const sortOrder = ref('asc')
+
+// Dropdown 状态
+const dropdowns = ref({
+  caseType: false,
+  riskType: false
+})
+
 // 分页相关
 const currentPage = ref(1)
 const pageSize = 6
@@ -73,7 +85,14 @@ const fetchData = async (page = 1) => {
 
   try {
     const includeRules = page === 1 ? '&include_rules=true' : ''
-    const response = await fetch(`/api/v1/data/risk-supervision?page=${page}&page_size=${pageSize}${includeRules}`)
+    let url = `/api/v1/data/risk-supervision?page=${page}&page_size=${pageSize}${includeRules}`
+
+    if (filterCaseType.value) url += `&case_type=${filterCaseType.value}`
+    if (filterRiskType.value) url += `&risk_type=${filterRiskType.value}`
+    if (filterOfficer.value) url += `&officer_name=${filterOfficer.value}`
+    url += `&sort_order=${sortOrder.value}`
+
+    const response = await fetch(url)
     const result = await response.json()
 
     if (result.code === 200 && result.data) {
@@ -109,6 +128,33 @@ const fetchData = async (page = 1) => {
 // 处理页码变化
 const handlePageChange = (page) => {
   fetchData(page)
+}
+
+// 筛选处理
+const handleFilter = (type, value) => {
+  if (type === 'case_type') filterCaseType.value = value
+  else if (type === 'risk_type') filterRiskType.value = value
+  else if (type === 'officer') filterOfficer.value = value
+  currentPage.value = 1
+  fetchData(1)
+  // 关闭所有 dropdown
+  Object.keys(dropdowns.value).forEach(key => dropdowns.value[key] = false)
+}
+
+// 排序切换
+const toggleSort = () => {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  currentPage.value = 1
+  fetchData(1)
+}
+
+// 切换 dropdown
+const toggleDropdown = (name) => {
+  dropdowns.value[name] = !dropdowns.value[name]
+  // 关闭其他 dropdown
+  Object.keys(dropdowns.value).forEach(key => {
+    if (key !== name) dropdowns.value[key] = false
+  })
 }
 
 onMounted(() => {
@@ -158,10 +204,49 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 规则描述 -->
-        <div v-if="rulesDescription" class="rules-description">
-          <span class="rules-label">显示规则：</span>
-          <span class="rules-text" v-html="rulesDescription"></span>
+        <!-- 底部控制栏 -->
+        <div class="filter-controls">
+          <!-- 左侧：规则描述 -->
+          <div v-if="rulesDescription" class="rules-section">
+            <span class="rules-label">显示规则：</span>
+            <span class="rules-text" v-html="rulesDescription"></span>
+          </div>
+
+          <!-- 右侧：操作按钮 -->
+          <div class="actions-section">
+            <!-- 案件类型 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('caseType')">
+                案件类型: {{ filterCaseType || '全部' }}
+                <span class="arrow">▲</span>
+              </button>
+              <div v-show="dropdowns.caseType" class="dropdown-menu">
+                <div @click="handleFilter('case_type', null)" :class="['dropdown-item', { active: filterCaseType === null }]">全部</div>
+                <div @click="handleFilter('case_type', '刑事')" :class="['dropdown-item', { active: filterCaseType === '刑事' }]">刑事</div>
+                <div @click="handleFilter('case_type', '行政')" :class="['dropdown-item', { active: filterCaseType === '行政' }]">行政</div>
+                <div @click="handleFilter('case_type', '治安')" :class="['dropdown-item', { active: filterCaseType === '治安' }]">治安</div>
+              </div>
+            </div>
+
+            <!-- 风险类型 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('riskType')">
+                风险类型: {{ filterRiskType || '全部' }}
+                <span class="arrow">▲</span>
+              </button>
+              <div v-show="dropdowns.riskType" class="dropdown-menu">
+                <div @click="handleFilter('risk_type', null)" :class="['dropdown-item', { active: filterRiskType === null }]">全部</div>
+                <div @click="handleFilter('risk_type', '初侦初查问题')" :class="['dropdown-item', { active: filterRiskType === '初侦初查问题' }]">初侦初查</div>
+                <div @click="handleFilter('risk_type', '涉案财物问题')" :class="['dropdown-item', { active: filterRiskType === '涉案财物问题' }]">涉案财物</div>
+                <div @click="handleFilter('risk_type', '办案期限问题')" :class="['dropdown-item', { active: filterRiskType === '办案期限问题' }]">办案期限</div>
+              </div>
+            </div>
+
+            <!-- 排序 -->
+            <button @click="toggleSort" class="dropdown-btn">
+              剩余天数: {{ sortOrder === 'asc' ? '升序 ↑' : '降序 ↓' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -207,7 +292,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.rules-description {
+.filter-controls {
   flex-shrink: 0;
   margin-top: 12px;
   padding: 10px 16px;
@@ -215,16 +300,99 @@ onMounted(() => {
   background: rgba(var(--c-table-rgb), 0.15);
   border-radius: 6px;
   border: 1px solid var(--c-border);
-  font-size: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.rules-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .rules-label {
-  color: var(--c-accent);
+  font-size: 22px;
   font-weight: 600;
-  margin-right: 8px;
+  color: var(--c-accent);
+  white-space: nowrap;
 }
 
 .rules-text {
   color: var(--c-text-secondary);
+  font-size: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.dropdown-wrapper {
+  position: relative;
+}
+
+.dropdown-btn {
+  padding: 6px 14px;
+  font-size: 22px;
+  color: var(--c-text-secondary);
+  background: var(--c-control-bg);
+  border: 2px solid var(--c-control-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dropdown-btn:hover {
+  color: var(--c-primary);
+  border-color: var(--c-primary);
+}
+
+.dropdown-btn .arrow {
+  font-size: 14px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  background: var(--c-control-bg);
+  border: 2px solid var(--c-control-border);
+  border-radius: 6px;
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 100%;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-item {
+  padding: 8px 14px;
+  font-size: 22px;
+  color: var(--c-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background: var(--c-control-hover-bg);
+  color: var(--c-primary);
+}
+
+.dropdown-item.active {
+  color: var(--c-primary);
+  background: rgba(var(--c-primary-rgb), 0.15);
+  font-weight: bold;
 }
 </style>

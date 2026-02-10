@@ -21,7 +21,7 @@ const total = ref(0)
 // 表头配置
 const headers = [
   { label: '案件编号', width: '200px', align: 'center' },
-  { label: '案件名称', width: '280px', align: 'left' },
+  { label: '案件名称', width: '280px', align: 'center' },
   { label: '案发时间', width: '180px', align: 'center' },
   { label: '案件类型', width: '120px', align: 'center' },
   { label: '风险问题', flex: 1, align: 'left', wrap: true },

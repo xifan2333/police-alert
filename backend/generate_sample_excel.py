@@ -12,7 +12,7 @@ def generate_sample_excel():
     wb = Workbook()
     wb.remove(wb.active)  # 删除默认sheet
 
-    today = date(2026, 1, 25)
+    today = date.today()
 
     # ==================== Sheet 1: 执法问题盯办 ====================
     ws1 = wb.create_sheet("执法问题盯办")
@@ -32,7 +32,7 @@ def generate_sample_excel():
     officers = ['张警官', '李警官', '王警官', '赵警官', '刘警官', '陈警官']
 
     for i in range(15):
-        case_number = f"330903202601{str(i+1).zfill(6)}"
+        case_number = f"A330903202601{str(i+1).zfill(6)}"
         case_name = f"案件{i+1}"
         case_time = (today - timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d')
         case_type = random.choice(case_types)
@@ -53,7 +53,7 @@ def generate_sample_excel():
 
     event_types = ['邻里矛盾', '家庭矛盾', '劳资纠纷', '物业纠纷', '其他']
     risk_levels = ['高', '中', '低']
-    statuses = ['未调解', '待盯办', '调解中', '已调解']
+    statuses = ['待化解', '待关注', '调解中', '已调解']
 
     content_templates = [
         '居民张某与李某因楼上漏水问题产生纠纷，双方情绪激动，需要及时调解处理。',

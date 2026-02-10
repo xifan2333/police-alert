@@ -35,18 +35,26 @@ def get_risk_supervision(
     }
 
 
+@router.get("/risk-supervision/filter-options", tags=["数据"])
+def get_risk_supervision_filter_options(db: Session = Depends(get_db)):
+    """获取案件筛选选项"""
+    officers = risk_supervision.get_officer_options(db)
+    return {"code": 200, "data": {"officers": officers}}
+
+
 @router.get("/dispute-management", tags=["数据"])
 def get_dispute_management(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     status: Optional[str] = Query(None, description="处置进度筛选"),
     risk_level: Optional[str] = Query(None, description="风险等级筛选"),
+    officer_name: Optional[str] = Query(None, description="责任民警筛选"),
     include_rules: bool = Query(True, description="是否包含规则"),
     db: Session = Depends(get_db)
 ):
     """获取矛盾纠纷闭环管理列表"""
     items, total, rules = dispute_management.list_dispute_management(
-        db, page, page_size, status, risk_level, include_rules
+        db, page, page_size, status, risk_level, officer_name, include_rules
     )
 
     return {
@@ -57,6 +65,13 @@ def get_dispute_management(
             "rules": rules if include_rules else []
         }
     }
+
+
+@router.get("/dispute-management/filter-options", tags=["数据"])
+def get_dispute_management_filter_options(db: Session = Depends(get_db)):
+    """获取纠纷筛选选项"""
+    officers = dispute_management.get_officer_options(db)
+    return {"code": 200, "data": {"officers": officers}}
 
 
 @router.get("/situation", tags=["数据"])

@@ -19,10 +19,14 @@ const filterRiskType = ref(null)
 const filterOfficer = ref(null)
 const sortOrder = ref('asc')
 
+// 警员选项
+const officerOptions = ref([])
+
 // Dropdown 状态
 const dropdowns = ref({
   caseType: false,
-  riskType: false
+  riskType: false,
+  officer: false
 })
 
 // 分页相关
@@ -157,7 +161,21 @@ const toggleDropdown = (name) => {
   })
 }
 
+// 获取筛选选项
+const fetchFilterOptions = async () => {
+  try {
+    const response = await fetch('/api/v1/data/risk-supervision/filter-options')
+    const result = await response.json()
+    if (result.code === 200) {
+      officerOptions.value = result.data.officers || []
+    }
+  } catch (err) {
+    console.error('获取筛选选项失败:', err)
+  }
+}
+
 onMounted(() => {
+  fetchFilterOptions()
   fetchData(1)
 })
 </script>
@@ -239,6 +257,25 @@ onMounted(() => {
                 <div @click="handleFilter('risk_type', '初侦初查问题')" :class="['dropdown-item', { active: filterRiskType === '初侦初查问题' }]">初侦初查</div>
                 <div @click="handleFilter('risk_type', '涉案财物问题')" :class="['dropdown-item', { active: filterRiskType === '涉案财物问题' }]">涉案财物</div>
                 <div @click="handleFilter('risk_type', '办案期限问题')" :class="['dropdown-item', { active: filterRiskType === '办案期限问题' }]">办案期限</div>
+              </div>
+            </div>
+
+            <!-- 责任民警 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('officer')">
+                责任民警: {{ filterOfficer || '全部' }}
+                <span class="arrow">▲</span>
+              </button>
+              <div v-show="dropdowns.officer" class="dropdown-menu">
+                <div @click="handleFilter('officer', null)" :class="['dropdown-item', { active: filterOfficer === null }]">全部</div>
+                <div
+                  v-for="officer in officerOptions"
+                  :key="officer"
+                  @click="handleFilter('officer', officer)"
+                  :class="['dropdown-item', { active: filterOfficer === officer }]"
+                >
+                  {{ officer }}
+                </div>
               </div>
             </div>
 
@@ -367,12 +404,15 @@ onMounted(() => {
   bottom: 100%;
   left: 0;
   margin-bottom: 4px;
-  background: var(--c-control-bg);
+  background: rgba(30, 58, 138, 0.95);
+  backdrop-filter: blur(10px);
   border: 2px solid var(--c-control-border);
   border-radius: 6px;
   overflow: hidden;
   z-index: 1000;
   min-width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
 }
 

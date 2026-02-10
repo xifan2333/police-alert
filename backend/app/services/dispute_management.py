@@ -11,6 +11,7 @@ def list_dispute_management(
     page_size: int = 50,
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
+    officer_name: Optional[str] = None,
     include_rules: bool = True
 ) -> Tuple[List[Dict[str, Any]], int, List[Dict[str, Any]]]:
     """
@@ -22,6 +23,7 @@ def list_dispute_management(
         page_size: 每页数量
         status: 处置进度筛选
         risk_level: 风险等级筛选
+        officer_name: 责任民警筛选
         include_rules: 是否包含规则
 
     Returns:
@@ -39,6 +41,10 @@ def list_dispute_management(
     # 风险等级筛选
     if risk_level:
         query = query.filter(DisputeManagement.risk_level == risk_level)
+
+    # 警员筛选
+    if officer_name:
+        query = query.filter(DisputeManagement.officer_name == officer_name)
 
     # 查询总数
     total = query.count()
@@ -87,3 +93,14 @@ def list_dispute_management(
         items.append(item_data)
 
     return items, total, rules
+
+
+def get_officer_options(db: Session) -> List[str]:
+    """获取去重的警员列表"""
+    officers = (
+        db.query(DisputeManagement.officer_name)
+        .distinct()
+        .order_by(DisputeManagement.officer_name.asc())
+        .all()
+    )
+    return [o[0] for o in officers]

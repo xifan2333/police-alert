@@ -97,3 +97,14 @@ def list_risk_supervision(
         items.append(item_data)
 
     return items, total, rules
+
+
+def get_officer_options(db: Session) -> List[str]:
+    """获取去重的警员列表"""
+    officers = (
+        db.query(RiskSupervision.officer_name)
+        .distinct()
+        .order_by(RiskSupervision.officer_name.asc())
+        .all()
+    )
+    return [o[0] for o in officers]

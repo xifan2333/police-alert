@@ -21,7 +21,7 @@ const total = ref(0)
 
 // 表头配置
 const headers = [
-  { label: '事件名称', width: '280px', align: 'left' },
+  { label: '事件名称', width: '280px', align: 'center' },
   { label: '事件类型', width: '120px', align: 'center' },
   { label: '事件内容', flex: 1, align: 'left', wrap: true },
   { label: '事发时间', width: '180px', align: 'center' },
@@ -180,16 +180,16 @@ onMounted(() => {
                 默认
               </button>
               <button
-                @click="handleFilter('未调解')"
-                :class="['control-btn', { active: filterStatus === '未调解' }]"
+                @click="handleFilter('待化解')"
+                :class="['control-btn', { active: filterStatus === '待化解' }]"
               >
-                未调解
+                待化解
               </button>
               <button
-                @click="handleFilter('待盯办')"
-                :class="['control-btn', { active: filterStatus === '待盯办' }]"
+                @click="handleFilter('待关注')"
+                :class="['control-btn', { active: filterStatus === '待关注' }]"
               >
-                待盯办
+                待关注
               </button>
             </div>
           </div>

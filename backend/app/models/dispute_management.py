@@ -22,7 +22,7 @@ class DisputeManagement(Base):
     __table_args__ = (
         CheckConstraint("length(content) <= 150", name="check_content_length"),
         CheckConstraint("risk_level IN ('高', '中', '低')", name="check_risk_level"),
-        CheckConstraint("status IN ('未调解', '待盯办', '调解中', '已调解')", name="check_status"),
+        CheckConstraint("status IN ('待化解', '待关注', '调解中', '已调解')", name="check_status"),
         UniqueConstraint("event_name", "event_time", "officer_name", name="uq_dispute_event_time_officer"),
         Index('idx_dispute_status_risk', 'status', 'risk_level'),
         Index('idx_dispute_event_time', 'event_time'),

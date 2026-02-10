@@ -30,9 +30,9 @@ def list_dispute_management(
     # 构建查询
     query = db.query(DisputeManagement)
 
-    # 默认筛选：未调解、待盯办
+    # 默认筛选：待化解、待关注
     if status is None:
-        query = query.filter(DisputeManagement.status.in_(["未调解", "待盯办"]))
+        query = query.filter(DisputeManagement.status.in_(["待化解", "待关注"]))
     else:
         query = query.filter(DisputeManagement.status == status)
 

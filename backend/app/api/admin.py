@@ -72,7 +72,7 @@ async def download_template():
     # 处置进度下拉
     dv = DataValidation(
         type="list",
-        formula1='"未调解,待盯办,调解中,已调解"',
+        formula1='"待化解,待关注,调解中,已调解"',
         allow_blank=True
     )
     dv.add('H2:H1000')

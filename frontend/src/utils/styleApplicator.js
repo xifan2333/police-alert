@@ -165,7 +165,8 @@ export function applyRowStyles(items, rules) {
 function findMatchingStyle(itemData, rules) {
   const style = {
     font_color: null,
-    style_token: null
+    style_token: null,
+    field: null
   }
 
   // 按优先级遍历规则
@@ -208,6 +209,7 @@ function findMatchingStyle(itemData, rules) {
       if (matched) {
         style.font_color = font_color
         style.style_token = style_token
+        style.field = field
         return style // 命中第一个规则后返回
       }
     }

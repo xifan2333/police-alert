@@ -45,11 +45,24 @@ const getCellValue = (item, columnIndex) => {
   }
 }
 
-// 获取行样式
+// 获取行样式（不再应用规则颜色到整行）
 const getRowStyle = (item, index) => ({
   background: index % 2 === 0 ? 'var(--c-table-even-bg)' : 'var(--c-table-odd-bg)',
-  color: item.style?.font_color || 'var(--c-text-primary)'
+  color: 'var(--c-text-primary)'
 })
+
+// 字段名到列索引的映射
+const fieldColumnMap = {
+  days_remaining: 6
+}
+
+// 获取单元格样式（规则颜色只作用于判断标准列）
+const getCellStyle = (item, columnIndex) => {
+  const style = item.style
+  if (!style?.font_color || !style?.field) return null
+  if (fieldColumnMap[style.field] !== columnIndex) return null
+  return { color: style.font_color, fontWeight: 'bold' }
+}
 
 // 加载数据
 const fetchData = async (page = 1) => {
@@ -126,6 +139,7 @@ onMounted(() => {
             :data="rawData"
             :getCellValue="getCellValue"
             :getRowStyle="getRowStyle"
+            :getCellStyle="getCellStyle"
             :autoScroll="true"
             :interval="10000"
             :pageSize="pageSize"

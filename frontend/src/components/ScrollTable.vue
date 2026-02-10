@@ -27,6 +27,12 @@ const props = defineProps({
       color: item.style?.font_color || 'var(--c-text-primary)'
     })
   },
+  // 获取单元格样式的函数（用于列级别颜色规则）
+  getCellStyle: {
+    type: Function,
+    default: null
+    // (item, columnIndex) => { color: '#xxx' } | null
+  },
   // 是否启用自动轮播
   autoScroll: {
     type: Boolean,
@@ -270,7 +276,7 @@ onUnmounted(() => {
             justifyContent: header.align === 'left' ? 'flex-start' : header.align === 'right' ? 'flex-end' : 'center'
           }"
         >
-          <span class="cell-content" :class="{ 'fade-out': isSliding }">
+          <span class="cell-content" :class="{ 'fade-out': isSliding }" :style="getCellStyle ? getCellStyle(item, colIndex) : null">
             {{ getCellValue(item, colIndex) }}
           </span>
         </div>

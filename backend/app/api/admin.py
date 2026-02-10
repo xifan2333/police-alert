@@ -34,7 +34,7 @@ async def download_template():
 
     # ==================== Sheet 1: 执法问题盯办 ====================
     ws1 = wb.create_sheet("执法问题盯办")
-    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险问题", "整改期限", "责任民警"])
+    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险类型", "风险问题", "整改期限", "责任民警"])
 
     # 案件类型下拉
     dv = DataValidation(
@@ -45,6 +45,15 @@ async def download_template():
     dv.add('E2:E1000')
     ws1.add_data_validation(dv)
 
+    # 风险类型下拉
+    dv = DataValidation(
+        type="list",
+        formula1='"初侦初查问题,涉案财物问题,办案期限问题"',
+        allow_blank=False
+    )
+    dv.add('F2:F1000')
+    ws1.add_data_validation(dv)
+
     # 风险问题下拉
     risk_issues = ["案件笔录未关联", "文书未开具", "调解协议书未上传", "执法音视频未上传",
                    "涉案物品未出入库", "未结案卷未归档", "治安案件延长审批", "强制措施超期提醒"]
@@ -53,7 +62,7 @@ async def download_template():
         formula1=f'"{",".join(risk_issues)}"',
         allow_blank=True
     )
-    dv.add('F2:F1000')
+    dv.add('G2:G1000')
     ws1.add_data_validation(dv)
 
     # ==================== Sheet 2: 矛盾纠纷管理 ====================
@@ -192,6 +201,7 @@ async def import_data(
                     case_name=str(row['案件名称']),
                     case_time=case_time,
                     case_type=str(row['案件类型']),
+                    risk_type=str(row['风险类型']),
                     risk_issues=risk_issues,
                     deadline=deadline,
                     officer_name=str(row['责任民警'])
@@ -202,6 +212,7 @@ async def import_data(
                         "case_name": stmt.excluded.case_name,
                         "case_time": stmt.excluded.case_time,
                         "case_type": stmt.excluded.case_type,
+                        "risk_type": stmt.excluded.risk_type,
                         "risk_issues": stmt.excluded.risk_issues,
                         "deadline": stmt.excluded.deadline,
                         "officer_name": stmt.excluded.officer_name,

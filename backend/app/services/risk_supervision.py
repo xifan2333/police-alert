@@ -62,6 +62,7 @@ def list_risk_supervision(
             "case_name": item.case_name,
             "case_time": item.case_time,
             "case_type": item.case_type,
+            "risk_type": item.risk_type,
             "risk_issues": risk_issues,
             "deadline": item.deadline,
             "officer_name": item.officer_name,

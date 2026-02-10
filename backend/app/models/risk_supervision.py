@@ -13,6 +13,7 @@ class RiskSupervision(Base):
     case_name = Column(String(200), nullable=False)
     case_time = Column(DateTime, nullable=False)
     case_type = Column(String(10), nullable=False)
+    risk_type = Column(String(20), nullable=False)
     risk_issues = Column(Text, nullable=False)  # JSON 数组字符串
     deadline = Column(DateTime, nullable=False, index=True)
     officer_name = Column(String(50), nullable=False)

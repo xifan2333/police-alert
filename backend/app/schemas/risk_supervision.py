@@ -18,6 +18,7 @@ class RiskSupervisionItem(BaseModel):
     case_name: str
     case_time: datetime
     case_type: str
+    risk_type: str
     risk_issues: List[str]
     deadline: datetime
     officer_name: str

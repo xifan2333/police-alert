@@ -16,9 +16,10 @@ def generate_sample_excel():
 
     # ==================== Sheet 1: 执法问题盯办 ====================
     ws1 = wb.create_sheet("执法问题盯办")
-    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险问题", "整改期限", "责任民警"])
+    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险类型", "风险问题", "整改期限", "责任民警"])
 
     case_types = ['刑事', '行政', '治安']
+    risk_types = ['初侦初查问题', '涉案财物问题', '办案期限问题']
     risk_issues_pool = [
         "案件笔录未关联",
         "文书未开具",
@@ -36,6 +37,7 @@ def generate_sample_excel():
         case_name = f"案件{i+1}"
         case_time = (today - timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d')
         case_type = random.choice(case_types)
+        risk_type = random.choice(risk_types)
 
         # 随机1-3个风险问题，用逗号分隔
         num_issues = random.randint(1, 3)
@@ -45,7 +47,7 @@ def generate_sample_excel():
         deadline = (today + timedelta(days=random.randint(2, 15))).strftime('%Y-%m-%d')
         officer_name = random.choice(officers)
 
-        ws1.append([i+1, case_number, case_name, case_time, case_type, risk_issues, deadline, officer_name])
+        ws1.append([i+1, case_number, case_name, case_time, case_type, risk_type, risk_issues, deadline, officer_name])
 
     # ==================== Sheet 2: 矛盾纠纷管理 ====================
     ws2 = wb.create_sheet("矛盾纠纷管理")

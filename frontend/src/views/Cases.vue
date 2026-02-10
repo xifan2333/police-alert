@@ -15,15 +15,16 @@ const rulesDescription = ref('')
 
 // 分页相关
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = 6
 const total = ref(0)
 
 // 表头配置
 const headers = [
-  { label: '案件编号', width: '200px', align: 'center' },
+  { label: '案件编号', width: '260px', align: 'center' },
   { label: '案件名称', width: '280px', align: 'center' },
   { label: '案发时间', width: '180px', align: 'center' },
   { label: '案件类型', width: '120px', align: 'center' },
+  { label: '风险类型', width: '150px', align: 'center' },
   { label: '风险问题', flex: 1, align: 'left', wrap: true },
   { label: '整改期限', width: '180px', align: 'center' },
   { label: '剩余天数', width: '120px', align: 'center' },
@@ -37,10 +38,11 @@ const getCellValue = (item, columnIndex) => {
     case 1: return item.case_name
     case 2: return formatDateTime(item.case_time)
     case 3: return item.case_type
-    case 4: return Array.isArray(item.risk_issues) ? item.risk_issues.join(', ') : item.risk_issues
-    case 5: return formatDateTime(item.deadline)
-    case 6: return `${item.days_remaining}天`
-    case 7: return item.officer_name
+    case 4: return item.risk_type
+    case 5: return Array.isArray(item.risk_issues) ? item.risk_issues.join(', ') : item.risk_issues
+    case 6: return formatDateTime(item.deadline)
+    case 7: return `${item.days_remaining}天`
+    case 8: return item.officer_name
     default: return ''
   }
 }
@@ -53,7 +55,7 @@ const getRowStyle = (item, index) => ({
 
 // 字段名到列索引的映射
 const fieldColumnMap = {
-  days_remaining: 6
+  days_remaining: 7
 }
 
 // 获取单元格样式（规则颜色只作用于判断标准列）
@@ -213,7 +215,7 @@ onMounted(() => {
   background: rgba(var(--c-table-rgb), 0.15);
   border-radius: 6px;
   border: 1px solid var(--c-border);
-  font-size: 18px;
+  font-size: 22px;
 }
 
 .rules-label {

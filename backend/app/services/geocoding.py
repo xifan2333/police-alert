@@ -1,8 +1,10 @@
 """地理编码服务"""
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from app.models.geocoding_cache import GeocodingCache
 from typing import Optional, Tuple
 from decimal import Decimal
+from datetime import datetime
 import httpx
 import json
 import logging
@@ -155,26 +157,26 @@ def save_coordinates(
     Returns:
         缓存记录
     """
-    # 检查是否已存在
+    # 使用 upsert 避免并发插入时的唯一约束冲突
+    stmt = sqlite_insert(GeocodingCache).values(
+        address=address,
+        longitude=longitude,
+        latitude=latitude,
+        created_at=datetime.now()
+    )
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["address"],
+        set_={
+            "longitude": stmt.excluded.longitude,
+            "latitude": stmt.excluded.latitude,
+        }
+    )
+    db.execute(stmt)
+    db.commit()
+
     cache = db.query(GeocodingCache).filter(
         GeocodingCache.address == address
     ).first()
-
-    if cache:
-        # 更新
-        cache.longitude = longitude
-        cache.latitude = latitude
-    else:
-        # 创建新记录
-        cache = GeocodingCache(
-            address=address,
-            longitude=longitude,
-            latitude=latitude
-        )
-        db.add(cache)
-
-    db.commit()
-    db.refresh(cache)
 
     return cache
 

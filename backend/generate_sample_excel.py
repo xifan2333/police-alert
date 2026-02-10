@@ -79,47 +79,61 @@ def generate_sample_excel():
 
     # ==================== Sheet 3: 警情态势追踪 ====================
     ws3 = wb.create_sheet("警情态势追踪")
-    ws3.append(["序号", "日期", "警情类型", "地点", "次数"])
+    ws3.append(["序号", "日期", "警情父类", "警情子类", "地点", "次数"])
 
-    alert_configs = {
-        '偷盗': {
+    # 子类 → (父类, 地点列表) 配置
+    alert_sub_configs = {
+        '偷盗类': {
+            'parent': '传统侵财',
             'locations': ['东港小区', '沈家门小区', '和平小区', '朱家尖小区', '展茅小区'],
-            'base_count': 15
         },
-        '诈骗': {
+        '其它诈骗': {
+            'parent': '传统侵财',
             'locations': ['东港小区', '沈家门小区', '和平小区', '朱家尖小区', '展茅小区'],
-            'base_count': 20
+        },
+        '抢夺': {
+            'parent': '传统侵财',
+            'locations': ['东港小区', '沈家门小区', '和平小区'],
+        },
+        '通讯网络诈骗': {
+            'parent': '新型侵财',
+            'locations': ['东港小区', '沈家门小区', '和平小区', '朱家尖小区', '展茅小区'],
         },
         '涉黄': {
+            'parent': '涉黄类',
             'locations': ['东港小区', '沈家门小区', '和平小区', '朱家尖小区', '展茅小区'],
-            'base_count': 5
         },
         '涉赌': {
+            'parent': '涉赌类',
             'locations': ['东港街道', '沈家门街道', '展茅街道', '六横镇', '桃花镇'],
-            'base_count': 8
+        },
+        '打架斗殴': {
+            'parent': '人身伤害',
+            'locations': ['普陀区东部', '普陀区西部', '普陀区南部', '普陀区北部', '普陀区中部'],
+        },
+        '家庭暴力': {
+            'parent': '人身伤害',
+            'locations': ['普陀区东部', '普陀区西部', '普陀区南部'],
         },
         '纠纷': {
+            'parent': '纠纷类',
             'locations': ['东港社区', '沈家门社区', '展茅社区', '六横社区', '桃花社区'],
-            'base_count': 25
         },
-        '人身伤害': {
-            'locations': ['普陀区东部', '普陀区西部', '普陀区南部', '普陀区北部', '普陀区中部'],
-            'base_count': 10
-        }
     }
 
     # 生成最近30天的数据
     row_num = 1
+    sub_type_list = list(alert_sub_configs.keys())
     for days_ago in range(30):
         alert_date = (today - timedelta(days=days_ago)).strftime('%Y-%m-%d')
 
         # 每天随机生成一些警情
-        for alert_type, config in alert_configs.items():
-            # 随机决定今天是否有这类警情
+        for sub_type in sub_type_list:
             if random.random() < 0.3:  # 30%概率
+                config = alert_sub_configs[sub_type]
                 location = random.choice(config['locations'])
                 count = random.randint(1, 3)
-                ws3.append([row_num, alert_date, alert_type, location, count])
+                ws3.append([row_num, alert_date, config['parent'], sub_type, location, count])
                 row_num += 1
 
     # ==================== Sheet 4: 重复报警记录 ====================

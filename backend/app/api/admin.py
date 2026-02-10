@@ -80,25 +80,44 @@ async def download_template():
 
     # ==================== Sheet 3: 警情态势追踪（日清表） ====================
     ws3 = wb.create_sheet("警情态势追踪")
-    ws3.append(["序号", "日期", "警情类型", "地点", "次数"])
+    ws3.append(["序号", "日期", "警情父类", "警情子类", "地点", "次数"])
 
-    # 警情类型下拉
+    # 警情子类 → 父类映射（子类为用户填写项，父类自动对应）
+    alert_sub_types = [
+        "偷盗类", "其它诈骗", "抢夺", "抢劫",
+        "通讯网络诈骗",
+        "涉黄类", "涉黄",
+        "涉赌类", "涉赌",
+        "打架斗殴", "家庭暴力", "伤害", "强奸", "杀人", "劫持", "绑架", "限制人身自由",
+        "纠纷",
+    ]
+
+    # 警情子类下拉（D列）
     dv = DataValidation(
         type="list",
-        formula1='"偷盗,诈骗,涉黄,涉赌,纠纷,人身伤害"',
+        formula1=f'"{",".join(alert_sub_types)}"',
         allow_blank=True
     )
-    dv.add('C2:C1000')
+    dv.add('D2:D1000')
     ws3.add_data_validation(dv)
 
-    # 次数验证
+    # 预填父类-子类对照数据供参考
+    from app.utils.alert_category import ALERT_CATEGORY_DATA
+    ref_row = 2
+    for category in ALERT_CATEGORY_DATA:
+        parent = category["parent"]
+        for sub in category["children"]:
+            ws3.append([ref_row - 1, "", parent, sub, "", ""])
+            ref_row += 1
+
+    # 次数验证（F列）
     dv = DataValidation(
         type="whole",
         operator="greaterThanOrEqual",
         formula1=0,
         allow_blank=False
     )
-    dv.add('E2:E1000')
+    dv.add('F2:F1000')
     ws3.add_data_validation(dv)
 
     # ==================== Sheet 4: 重复报警记录（日清表） ====================
@@ -226,11 +245,22 @@ async def import_data(
 
         # ==================== 导入警情态势追踪 ====================
         if "警情态势追踪" in excel_file.sheet_names:
+            from app.utils.alert_category import SUB_TYPE_TO_ALERT_TYPE
             df = pd.read_excel(excel_file, sheet_name="警情态势追踪")
 
             for _, row in df.iterrows():
-                if pd.isna(row['日期']) or pd.isna(row['警情类型']) or pd.isna(row['地点']):  # 跳过空行
+                # 支持新模板（警情子类列）和旧模板（警情类型列）
+                sub_type = None
+                if '警情子类' in df.columns and pd.notna(row.get('警情子类')):
+                    sub_type = str(row['警情子类'])
+                elif '警情类型' in df.columns and pd.notna(row.get('警情类型')):
+                    sub_type = str(row['警情类型'])
+
+                if pd.isna(row['日期']) or sub_type is None or pd.isna(row['地点']):
                     continue
+
+                # 子类映射为数据库 alert_type，未匹配则原值写入
+                alert_type = SUB_TYPE_TO_ALERT_TYPE.get(sub_type, sub_type)
 
                 alert_date = pd.to_datetime(row['日期']).date()
                 count = int(row['次数']) if pd.notna(row['次数']) else 0
@@ -239,7 +269,7 @@ async def import_data(
                 if count > 0:
                     stmt = sqlite_insert(PoliceAlert).values(
                         alert_date=alert_date,
-                        alert_type=str(row['警情类型']),
+                        alert_type=alert_type,
                         location=str(row['地点']),
                         count=count
                     )

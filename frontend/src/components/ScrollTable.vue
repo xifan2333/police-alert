@@ -313,7 +313,7 @@ onUnmounted(() => {
 
 .header-cell {
   padding: 0 8px;
-  font-weight: 600;
+  font-weight: 800;
   font-size: 22px;
   color: var(--c-text-primary);
   display: flex;
@@ -349,6 +349,7 @@ onUnmounted(() => {
 .table-cell {
   padding: 0 8px;
   font-size: 18px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   text-align: center;

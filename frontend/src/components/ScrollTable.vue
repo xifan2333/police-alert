@@ -311,7 +311,7 @@ onUnmounted(() => {
   background: var(--c-table-header-bg);
   border-radius: 4px 4px 0 0;
   padding: 0 8px;
-  height: 50px;
+  height: 60px;
   align-items: center;
   flex-shrink: 0;
   border-bottom: 2px solid var(--c-border);
@@ -320,7 +320,7 @@ onUnmounted(() => {
 .header-cell {
   padding: 0 8px;
   font-weight: 800;
-  font-size: 22px;
+  font-size: 26px;
   color: var(--c-text-primary);
   display: flex;
   align-items: center;
@@ -343,7 +343,7 @@ onUnmounted(() => {
   padding: 16px 8px;
   border-bottom: 1px solid var(--c-border-light);
   transition: background 0.2s;
-  min-height: 80px;
+  flex: 1;
   flex-shrink: 0;
 }
 
@@ -354,7 +354,7 @@ onUnmounted(() => {
 /* 表格单元格 */
 .table-cell {
   padding: 0 8px;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
   display: flex;
   align-items: center;

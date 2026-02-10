@@ -16,7 +16,7 @@ const rulesDescription = ref('')
 
 // 分页相关
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = 6
 const total = ref(0)
 
 // 表头配置
@@ -170,7 +170,12 @@ onMounted(() => {
 
         <!-- 底部控制栏 -->
         <div class="filter-controls">
-          <div class="control-group">
+          <!-- 规则描述 -->
+          <div v-if="rulesDescription" class="control-group">
+            <div class="control-label">显示规则</div>
+            <div class="rules-text" v-html="rulesDescription"></div>
+          </div>
+          <div class="control-group filter-group">
             <div class="control-label">状态筛选</div>
             <div class="control-buttons">
               <button
@@ -192,11 +197,6 @@ onMounted(() => {
                 待关注
               </button>
             </div>
-          </div>
-          <!-- 规则描述 -->
-          <div v-if="rulesDescription" class="control-group rules-group">
-            <div class="control-label">显示规则</div>
-            <div class="rules-text" v-html="rulesDescription"></div>
           </div>
         </div>
       </div>
@@ -264,7 +264,7 @@ onMounted(() => {
 }
 
 .control-label {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--c-accent);
   white-space: nowrap;
@@ -279,7 +279,7 @@ onMounted(() => {
 
 .control-btn {
   padding: 6px 14px;
-  font-size: 15px;
+  font-size: 22px;
   color: var(--c-text-secondary);
   background: var(--c-control-bg);
   border: 2px solid var(--c-control-border);
@@ -301,13 +301,13 @@ onMounted(() => {
   box-shadow: 0 0 10px var(--c-primary);
 }
 
-.rules-group {
+.filter-group {
   margin-left: auto;
   margin-right: 80px;
 }
 
 .rules-text {
   color: var(--c-text-secondary);
-  font-size: 18px;
+  font-size: 22px;
 }
 </style>

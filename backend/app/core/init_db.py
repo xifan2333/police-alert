@@ -43,20 +43,25 @@ def init_display_rules(db):
                 "field": "days_remaining",
                 "conditions": [
                     {
-                        "operator": "<=",
+                        "operator": "<",
                         "value": 3,
                         "font_color": "#f5222d"
                     },
                     {
-                        "operator": "<=",
-                        "value": 7,
+                        "operator": "<",
+                        "value": 5,
                         "font_color": "#faad14"
+                    },
+                    {
+                        "operator": "<",
+                        "value": 7,
+                        "font_color": "#00d9ff"
                     }
                 ]
             }, ensure_ascii=False),
             priority=1,
             is_enabled=1,
-            description='剩余天数：≤3天<span style="color:#f5222d">红色</span>，≤7天<span style="color:#faad14">黄色</span>'
+            description='三色预警:到期提醒<7天<span style="color:#00d9ff">蓝色预警</span>;<5天<span style="color:#faad14">黄色预警</span>;<3天<span style="color:#f5222d">红色预警</span>'
         ),
         # 矛盾纠纷管理 - 风险等级颜色规则
         DisplayRule(

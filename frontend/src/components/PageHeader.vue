@@ -39,7 +39,7 @@ onUnmounted(() => {
     <header class="page-header">
     <!-- 左侧：警徽和派出所名称 -->
     <div class="header-left">
-      <img src="/logo-blue.png" alt="警徽" class="header-logo" />
+      <img src="/logo-gold.png" alt="警徽" class="header-logo" />
       <div class="header-police-info">
         <div class="police-name">沈西派出所</div>
         <div class="police-name-en">SHENXI POLICE</div>
@@ -137,7 +137,7 @@ onUnmounted(() => {
 
 .header-title {
   font-family: var(--font-serif);
-  font-size: 42px;
+  font-size: 56px;
   font-weight: bold;
   color: var(--c-text-primary);
   letter-spacing: 6px;

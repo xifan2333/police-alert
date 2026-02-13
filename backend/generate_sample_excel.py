@@ -6,6 +6,16 @@
 from openpyxl import Workbook
 from datetime import datetime, timedelta, date
 import random
+import sys
+import os
+
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from app.utils.constants import (
+    PROBLEM_TYPE_OPTIONS, CASE_TYPE_OPTIONS, RISK_TYPE_OPTIONS,
+    RISK_ISSUE_OPTIONS, RISK_LEVEL_OPTIONS, DISPUTE_STATUS_OPTIONS
+)
 
 def generate_sample_excel():
     """生成示例Excel文件"""
@@ -16,20 +26,11 @@ def generate_sample_excel():
 
     # ==================== Sheet 1: 执法问题盯办 ====================
     ws1 = wb.create_sheet("执法问题盯办")
-    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险类型", "风险问题", "整改期限", "责任民警"])
+    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险类型", "风险问题", "问题类型", "整改期限", "责任民警"])
 
-    case_types = ['刑事', '行政', '治安']
-    risk_types = ['初侦初查问题', '涉案财物问题', '办案期限问题']
-    risk_issues_pool = [
-        "案件笔录未关联",
-        "文书未开具",
-        "调解协议书未上传",
-        "执法音视频未上传",
-        "涉案物品未出入库",
-        "未结案卷未归档",
-        "治安案件延长审批",
-        "强制措施超期提醒"
-    ]
+    case_types = CASE_TYPE_OPTIONS
+    risk_types = RISK_TYPE_OPTIONS
+    risk_issues_pool = RISK_ISSUE_OPTIONS
     officers = ['张警官', '李警官', '王警官', '赵警官', '刘警官', '陈警官']
 
     for i in range(15):
@@ -43,19 +44,22 @@ def generate_sample_excel():
         num_issues = random.randint(1, 3)
         risk_issues = ','.join(random.sample(risk_issues_pool, num_issues))
 
+        # 随机问题类型
+        problem_type = random.choice(PROBLEM_TYPE_OPTIONS)
+
         # 整改期限：2-15天后
         deadline = (today + timedelta(days=random.randint(2, 15))).strftime('%Y-%m-%d')
         officer_name = random.choice(officers)
 
-        ws1.append([i+1, case_number, case_name, case_time, case_type, risk_type, risk_issues, deadline, officer_name])
+        ws1.append([i+1, case_number, case_name, case_time, case_type, risk_type, risk_issues, problem_type, deadline, officer_name])
 
     # ==================== Sheet 2: 矛盾纠纷管理 ====================
     ws2 = wb.create_sheet("矛盾纠纷管理")
     ws2.append(["序号", "事件名称", "事件类型", "事件内容", "事发时间", "风险等级", "责任民警", "处置进度"])
 
     event_types = ['邻里矛盾', '家庭矛盾', '劳资纠纷', '物业纠纷', '其他']
-    risk_levels = ['高', '中', '低']
-    statuses = ['待化解', '待关注', '调解中', '已调解']
+    risk_levels = RISK_LEVEL_OPTIONS
+    statuses = DISPUTE_STATUS_OPTIONS
 
     content_templates = [
         '居民张某与李某因楼上漏水问题产生纠纷，双方情绪激动，需要及时调解处理。',

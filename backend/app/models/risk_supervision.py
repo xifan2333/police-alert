@@ -15,6 +15,7 @@ class RiskSupervision(Base):
     case_type = Column(String(10), nullable=False)
     risk_type = Column(String(20), nullable=False)
     risk_issues = Column(Text, nullable=False)  # JSON 数组字符串
+    problem_type = Column(String(20), nullable=False, default='其它')  # 问题类型
     deadline = Column(DateTime, nullable=False, index=True)
     officer_name = Column(String(50), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now)

@@ -10,6 +10,11 @@ from app.models.risk_supervision import RiskSupervision
 from app.models.dispute_management import DisputeManagement
 from app.models.display_rule import DisplayRule
 from app.schemas.display_rule import DisplayRuleCreate, DisplayRuleResponse
+from app.utils.constants import (
+    PROBLEM_TYPE_OPTIONS, PROBLEM_TYPE_DEFAULT, normalize_problem_type,
+    CASE_TYPE_OPTIONS, RISK_TYPE_OPTIONS, RISK_ISSUE_OPTIONS,
+    RISK_LEVEL_OPTIONS, DISPUTE_STATUS_OPTIONS
+)
 import pandas as pd
 from datetime import datetime, date
 from io import BytesIO
@@ -34,12 +39,12 @@ async def download_template():
 
     # ==================== Sheet 1: 执法问题盯办 ====================
     ws1 = wb.create_sheet("执法问题盯办")
-    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险类型", "风险问题", "整改期限", "责任民警"])
+    ws1.append(["序号", "案件编号", "案件名称", "案发时间", "案件类型", "风险类型", "风险问题", "问题类型", "整改期限", "责任民警"])
 
     # 案件类型下拉
     dv = DataValidation(
         type="list",
-        formula1='"刑事,行政,治安"',
+        formula1=f'"{",".join(CASE_TYPE_OPTIONS)}"',
         allow_blank=True
     )
     dv.add('E2:E1000')
@@ -48,21 +53,28 @@ async def download_template():
     # 风险类型下拉
     dv = DataValidation(
         type="list",
-        formula1='"初侦初查问题,涉案财物问题,办案期限问题"',
+        formula1=f'"{",".join(RISK_TYPE_OPTIONS)}"',
         allow_blank=False
     )
     dv.add('F2:F1000')
     ws1.add_data_validation(dv)
 
     # 风险问题下拉
-    risk_issues = ["案件笔录未关联", "文书未开具", "调解协议书未上传", "执法音视频未上传",
-                   "涉案物品未出入库", "未结案卷未归档", "治安案件延长审批", "强制措施超期提醒"]
     dv = DataValidation(
         type="list",
-        formula1=f'"{",".join(risk_issues)}"',
+        formula1=f'"{",".join(RISK_ISSUE_OPTIONS)}"',
         allow_blank=True
     )
     dv.add('G2:G1000')
+    ws1.add_data_validation(dv)
+
+    # 问题类型下拉
+    dv = DataValidation(
+        type="list",
+        formula1=f'"{",".join(PROBLEM_TYPE_OPTIONS)}"',
+        allow_blank=True
+    )
+    dv.add('H2:H1000')
     ws1.add_data_validation(dv)
 
     # ==================== Sheet 2: 矛盾纠纷管理 ====================
@@ -72,7 +84,7 @@ async def download_template():
     # 风险等级下拉
     dv = DataValidation(
         type="list",
-        formula1='"高,中,低"',
+        formula1=f'"{",".join(RISK_LEVEL_OPTIONS)}"',
         allow_blank=True
     )
     dv.add('F2:F1000')
@@ -81,7 +93,7 @@ async def download_template():
     # 处置进度下拉
     dv = DataValidation(
         type="list",
-        formula1='"待化解,待关注,调解中,已调解"',
+        formula1=f'"{",".join(DISPUTE_STATUS_OPTIONS)}"',
         allow_blank=True
     )
     dv.add('H2:H1000')
@@ -181,12 +193,15 @@ async def import_data(
             "risk_supervision": 0,
             "dispute_management": 0,
             "police_alert": 0,
-            "call_record": 0
+            "call_record": 0,
+            "risk_supervision_defaulted": 0  # 问题类型使用默认值的记录数
         }
 
         # ==================== 导入执法问题盯办 ====================
         if "执法问题盯办" in excel_file.sheet_names:
             df = pd.read_excel(excel_file, sheet_name="执法问题盯办")
+
+            defaulted_count = 0  # 使用默认值的记录数
 
             for _, row in df.iterrows():
                 if pd.isna(row['案件编号']):  # 跳过空行
@@ -196,6 +211,12 @@ async def import_data(
                 deadline = pd.to_datetime(row['整改期限']) if pd.notna(row['整改期限']) else datetime.now()
                 risk_issues = str(row['风险问题']) if pd.notna(row['风险问题']) else '[]'
 
+                # 处理问题类型（兼容旧模板）
+                raw_value = row.get('问题类型') if '问题类型' in df.columns else None
+                problem_type, used_default = normalize_problem_type(raw_value)
+                if used_default:
+                    defaulted_count += 1
+
                 stmt = sqlite_insert(RiskSupervision).values(
                     case_number=str(row['案件编号']),
                     case_name=str(row['案件名称']),
@@ -203,6 +224,7 @@ async def import_data(
                     case_type=str(row['案件类型']),
                     risk_type=str(row['风险类型']),
                     risk_issues=risk_issues,
+                    problem_type=problem_type,
                     deadline=deadline,
                     officer_name=str(row['责任民警'])
                 )
@@ -214,6 +236,7 @@ async def import_data(
                         "case_type": stmt.excluded.case_type,
                         "risk_type": stmt.excluded.risk_type,
                         "risk_issues": stmt.excluded.risk_issues,
+                        "problem_type": stmt.excluded.problem_type,
                         "deadline": stmt.excluded.deadline,
                         "officer_name": stmt.excluded.officer_name,
                         "updated_at": datetime.now()
@@ -221,6 +244,8 @@ async def import_data(
                 )
                 db.execute(stmt)
                 result["risk_supervision"] += 1
+
+            result["risk_supervision_defaulted"] = defaulted_count
 
         # ==================== 导入矛盾纠纷管理 ====================
         if "矛盾纠纷管理" in excel_file.sheet_names:
@@ -330,7 +355,9 @@ async def import_data(
                 "矛盾纠纷管理": result["dispute_management"],
                 "警情态势追踪": result["police_alert"],
                 "重复报警记录": result["call_record"],
-                "总计": sum(result.values())
+                "总计": sum([result["risk_supervision"], result["dispute_management"],
+                           result["police_alert"], result["call_record"]]),
+                "问题类型默认填充数": result["risk_supervision_defaulted"]
             }
         }
 

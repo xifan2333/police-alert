@@ -70,7 +70,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['page-change'])
+const emit = defineEmits(['page-change', 'header-click'])
 
 // 内部页码状态（仅用于本地分页模式，0-indexed）
 const localPage = ref(0)
@@ -242,13 +242,15 @@ onUnmounted(() => {
         v-for="(header, index) in headers"
         :key="index"
         class="header-cell"
+        :class="{ sortable: header.sortable, filterable: header.filterable }"
         :style="{
           width: header.flex ? 'auto' : header.width,
           flex: header.flex || 'none',
           textAlign: header.align || 'center'
         }"
+        @click="header.sortable ? emit('header-click', header.field) : null"
       >
-        {{ header.label }}
+        <span v-html="header.label"></span>
       </div>
     </div>
 
@@ -296,6 +298,60 @@ onUnmounted(() => {
   </div>
 </template>
 
+<style>
+/* 非作用域样式：用于 v-html 注入的排序图标 */
+.sort-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: all 0.2s ease-out;
+  position: relative;
+  width: 12px;
+  height: 14px;
+}
+
+/* 升序箭头：向上 */
+.sort-icon.asc {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 8px solid currentColor;
+}
+
+/* 降序箭头：向下 */
+.sort-icon.desc {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid currentColor;
+}
+
+/* 默认双向箭头 */
+.sort-icon.default::before,
+.sort-icon.default::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+
+.sort-icon.default::before {
+  top: 0;
+  border-bottom: 6px solid rgba(255, 255, 255, 0.4);
+}
+
+.sort-icon.default::after {
+  bottom: 0;
+  border-top: 6px solid rgba(255, 255, 255, 0.4);
+}
+</style>
+
 <style scoped>
 /* 表格容器 */
 .scroll-table {
@@ -326,6 +382,15 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header-cell.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-cell.sortable:hover {
+  color: var(--c-primary);
 }
 
 /* 表体 */

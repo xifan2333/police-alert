@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ScrollTable from '@/components/ScrollTable.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
@@ -15,17 +15,19 @@ const rulesDescription = ref('')
 
 // 筛选和排序
 const filterCaseType = ref(null)
-const filterRiskType = ref(null)
+const filterProblemType = ref(null)
 const filterOfficer = ref(null)
+const sortField = ref('days_remaining')
 const sortOrder = ref('asc')
 
 // 警员选项
 const officerOptions = ref([])
+const caseTypeOptions = ref([])
 
 // Dropdown 状态
 const dropdowns = ref({
   caseType: false,
-  riskType: false,
+  problemType: false,
   officer: false
 })
 
@@ -35,17 +37,17 @@ const pageSize = 6
 const total = ref(0)
 
 // 表头配置
-const headers = [
-  { label: '案件编号', width: '260px', align: 'center' },
+const headers = computed(() => [
+  { label: `案件编号 ${getSortIcon('case_number')}`, width: '260px', align: 'center', sortable: true, field: 'case_number' },
   { label: '案件名称', width: '280px', align: 'center' },
-  { label: '案发时间', width: '180px', align: 'center' },
-  { label: '案件类型', width: '120px', align: 'center' },
-  { label: '风险类型', width: '150px', align: 'center' },
-  { label: '风险问题', flex: 1, align: 'left', wrap: true },
-  { label: '整改期限', width: '180px', align: 'center' },
-  { label: '剩余天数', width: '120px', align: 'center' },
-  { label: '责任民警', width: '120px', align: 'center' }
-]
+  { label: `案发时间 ${getSortIcon('case_time')}`, width: '180px', align: 'center', sortable: true, field: 'case_time' },
+  { label: '案件类型', width: '120px', align: 'center', filterable: true },
+  { label: '问题类型', width: '150px', align: 'center', filterable: true },
+  { label: '具体内容', flex: 1, align: 'left', wrap: true },
+  { label: `整改期限 ${getSortIcon('deadline')}`, width: '180px', align: 'center', sortable: true, field: 'deadline' },
+  { label: `剩余天数 ${getSortIcon('days_remaining')}`, width: '160px', align: 'center', sortable: true, field: 'days_remaining' },
+  { label: '责任民警', width: '120px', align: 'center', filterable: true }
+])
 
 // 获取单元格值
 const getCellValue = (item, columnIndex) => {
@@ -54,8 +56,8 @@ const getCellValue = (item, columnIndex) => {
     case 1: return item.case_name
     case 2: return formatDateTime(item.case_time)
     case 3: return item.case_type
-    case 4: return item.risk_type
-    case 5: return Array.isArray(item.risk_issues) ? item.risk_issues.join(', ') : item.risk_issues
+    case 4: return item.problem_type
+    case 5: return Array.isArray(item.specific_content) ? item.specific_content.join(', ') : item.specific_content
     case 6: return formatDateTime(item.deadline)
     case 7: return `${item.days_remaining}天`
     case 8: return item.officer_name
@@ -92,9 +94,9 @@ const fetchData = async (page = 1) => {
     let url = `/api/v1/data/risk-supervision?page=${page}&page_size=${pageSize}${includeRules}`
 
     if (filterCaseType.value) url += `&case_type=${filterCaseType.value}`
-    if (filterRiskType.value) url += `&risk_type=${filterRiskType.value}`
+    if (filterProblemType.value) url += `&problem_type=${filterProblemType.value}`
     if (filterOfficer.value) url += `&officer_name=${filterOfficer.value}`
-    url += `&sort_order=${sortOrder.value}`
+    url += `&sort_field=${sortField.value}&sort_order=${sortOrder.value}`
 
     const response = await fetch(url)
     const result = await response.json()
@@ -137,17 +139,26 @@ const handlePageChange = (page) => {
 // 筛选处理
 const handleFilter = (type, value) => {
   if (type === 'case_type') filterCaseType.value = value
-  else if (type === 'risk_type') filterRiskType.value = value
+  else if (type === 'problem_type') filterProblemType.value = value
   else if (type === 'officer') filterOfficer.value = value
   currentPage.value = 1
   fetchData(1)
-  // 关闭所有 dropdown
   Object.keys(dropdowns.value).forEach(key => dropdowns.value[key] = false)
 }
 
-// 排序切换
-const toggleSort = () => {
-  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+// 排序处理
+const handleSort = (field) => {
+  console.log('handleSort called with field:', field)
+  console.log('current sortField:', sortField.value, 'sortOrder:', sortOrder.value)
+
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortOrder.value = 'asc'
+  }
+
+  console.log('new sortField:', sortField.value, 'sortOrder:', sortOrder.value)
   currentPage.value = 1
   fetchData(1)
 }
@@ -168,9 +179,22 @@ const fetchFilterOptions = async () => {
     const result = await response.json()
     if (result.code === 200) {
       officerOptions.value = result.data.officers || []
+      caseTypeOptions.value = result.data.case_types || []
     }
   } catch (err) {
     console.error('获取筛选选项失败:', err)
+  }
+}
+
+// 获取排序图标
+const getSortIcon = (field) => {
+  if (sortField.value === field) {
+    // 当前排序字段：显示高亮的上/下箭头
+    const directionClass = sortOrder.value === 'asc' ? 'asc' : 'desc'
+    return `<span class="sort-icon ${directionClass}"></span>`
+  } else {
+    // 其他可排序字段：显示默认的双向箭头
+    return `<span class="sort-icon default"></span>`
   }
 }
 
@@ -186,6 +210,66 @@ onMounted(() => {
 
     <div class="content-wrapper">
       <div class="list-container">
+        <!-- 表格工具栏：筛选器 -->
+        <div class="table-toolbar">
+          <!-- 案件类型 -->
+          <div class="dropdown-wrapper">
+            <button class="dropdown-btn" @click="toggleDropdown('caseType')">
+              案件类型: {{ filterCaseType || '全部' }}
+              <span class="arrow"></span>
+            </button>
+            <div v-show="dropdowns.caseType" class="dropdown-menu">
+              <div @click="handleFilter('case_type', null)" :class="['dropdown-item', { active: filterCaseType === null }]">全部</div>
+              <div
+                v-for="caseType in caseTypeOptions"
+                :key="caseType"
+                @click="handleFilter('case_type', caseType)"
+                :class="['dropdown-item', { active: filterCaseType === caseType }]"
+              >
+                {{ caseType }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 问题类型 -->
+          <div class="dropdown-wrapper">
+            <button class="dropdown-btn" @click="toggleDropdown('problemType')">
+              问题类型: {{ filterProblemType || '全部' }}
+              <span class="arrow"></span>
+            </button>
+            <div v-show="dropdowns.problemType" class="dropdown-menu">
+              <div @click="handleFilter('problem_type', null)" :class="['dropdown-item', { active: filterProblemType === null }]">全部</div>
+              <div @click="handleFilter('problem_type', '文书开具')" :class="['dropdown-item', { active: filterProblemType === '文书开具' }]">文书开具</div>
+              <div @click="handleFilter('problem_type', '笔录上传')" :class="['dropdown-item', { active: filterProblemType === '笔录上传' }]">笔录上传</div>
+              <div @click="handleFilter('problem_type', '办案期限')" :class="['dropdown-item', { active: filterProblemType === '办案期限' }]">办案期限</div>
+              <div @click="handleFilter('problem_type', '音视频上传')" :class="['dropdown-item', { active: filterProblemType === '音视频上传' }]">音视频上传</div>
+              <div @click="handleFilter('problem_type', '调查取证')" :class="['dropdown-item', { active: filterProblemType === '调查取证' }]">调查取证</div>
+              <div @click="handleFilter('problem_type', '涉案财物')" :class="['dropdown-item', { active: filterProblemType === '涉案财物' }]">涉案财物</div>
+              <div @click="handleFilter('problem_type', '办案程序')" :class="['dropdown-item', { active: filterProblemType === '办案程序' }]">办案程序</div>
+              <div @click="handleFilter('problem_type', '其它')" :class="['dropdown-item', { active: filterProblemType === '其它' }]">其它</div>
+            </div>
+          </div>
+
+          <!-- 责任民警 -->
+          <div class="dropdown-wrapper">
+            <button class="dropdown-btn" @click="toggleDropdown('officer')">
+              责任民警: {{ filterOfficer || '全部' }}
+              <span class="arrow"></span>
+            </button>
+            <div v-show="dropdowns.officer" class="dropdown-menu">
+              <div @click="handleFilter('officer', null)" :class="['dropdown-item', { active: filterOfficer === null }]">全部</div>
+              <div
+                v-for="officer in officerOptions"
+                :key="officer"
+                @click="handleFilter('officer', officer)"
+                :class="['dropdown-item', { active: filterOfficer === officer }]"
+              >
+                {{ officer }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="table-wrapper">
           <!-- 加载状态 -->
           <div v-if="loading" class="h-full flex items-center justify-center">
@@ -214,6 +298,7 @@ onMounted(() => {
             :total="total"
             :loading="loading"
             @page-change="handlePageChange"
+            @header-click="handleSort"
           />
 
           <!-- 无数据 -->
@@ -222,68 +307,10 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 底部控制栏 -->
-        <div class="filter-controls">
-          <!-- 左侧：规则描述 -->
-          <div v-if="rulesDescription" class="rules-section">
-            <span class="rules-label">显示规则：</span>
-            <span class="rules-text" v-html="rulesDescription"></span>
-          </div>
-
-          <!-- 右侧：操作按钮 -->
-          <div class="actions-section">
-            <!-- 案件类型 -->
-            <div class="dropdown-wrapper">
-              <button class="dropdown-btn" @click="toggleDropdown('caseType')">
-                案件类型: {{ filterCaseType || '全部' }}
-                <span class="arrow">▲</span>
-              </button>
-              <div v-show="dropdowns.caseType" class="dropdown-menu">
-                <div @click="handleFilter('case_type', null)" :class="['dropdown-item', { active: filterCaseType === null }]">全部</div>
-                <div @click="handleFilter('case_type', '刑事')" :class="['dropdown-item', { active: filterCaseType === '刑事' }]">刑事</div>
-                <div @click="handleFilter('case_type', '行政')" :class="['dropdown-item', { active: filterCaseType === '行政' }]">行政</div>
-                <div @click="handleFilter('case_type', '治安')" :class="['dropdown-item', { active: filterCaseType === '治安' }]">治安</div>
-              </div>
-            </div>
-
-            <!-- 风险类型 -->
-            <div class="dropdown-wrapper">
-              <button class="dropdown-btn" @click="toggleDropdown('riskType')">
-                风险类型: {{ filterRiskType || '全部' }}
-                <span class="arrow">▲</span>
-              </button>
-              <div v-show="dropdowns.riskType" class="dropdown-menu">
-                <div @click="handleFilter('risk_type', null)" :class="['dropdown-item', { active: filterRiskType === null }]">全部</div>
-                <div @click="handleFilter('risk_type', '初侦初查问题')" :class="['dropdown-item', { active: filterRiskType === '初侦初查问题' }]">初侦初查</div>
-                <div @click="handleFilter('risk_type', '涉案财物问题')" :class="['dropdown-item', { active: filterRiskType === '涉案财物问题' }]">涉案财物</div>
-                <div @click="handleFilter('risk_type', '办案期限问题')" :class="['dropdown-item', { active: filterRiskType === '办案期限问题' }]">办案期限</div>
-              </div>
-            </div>
-
-            <!-- 责任民警 -->
-            <div class="dropdown-wrapper">
-              <button class="dropdown-btn" @click="toggleDropdown('officer')">
-                责任民警: {{ filterOfficer || '全部' }}
-                <span class="arrow">▲</span>
-              </button>
-              <div v-show="dropdowns.officer" class="dropdown-menu">
-                <div @click="handleFilter('officer', null)" :class="['dropdown-item', { active: filterOfficer === null }]">全部</div>
-                <div
-                  v-for="officer in officerOptions"
-                  :key="officer"
-                  @click="handleFilter('officer', officer)"
-                  :class="['dropdown-item', { active: filterOfficer === officer }]"
-                >
-                  {{ officer }}
-                </div>
-              </div>
-            </div>
-
-            <!-- 排序 -->
-            <button @click="toggleSort" class="dropdown-btn">
-              剩余天数: {{ sortOrder === 'asc' ? '升序 ↑' : '降序 ↓' }}
-            </button>
-          </div>
+        <!-- 底部规则显示 -->
+        <div v-if="rulesDescription" class="rules-display">
+          <span class="rules-label">显示规则：</span>
+          <span class="rules-text" v-html="rulesDescription"></span>
         </div>
       </div>
     </div>
@@ -323,32 +350,30 @@ onMounted(() => {
   flex-direction: column;
 }
 
+.table-toolbar {
+  flex-shrink: 0;
+  padding-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .table-wrapper {
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
-.filter-controls {
+.rules-display {
   flex-shrink: 0;
   margin-top: 12px;
   padding: 10px 16px;
-  padding-right: 80px;
   background: rgba(var(--c-table-rgb), 0.15);
   border-radius: 6px;
   border: 1px solid var(--c-border);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.rules-section {
-  flex: 1;
-  display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
 }
 
 .rules-label {
@@ -363,12 +388,6 @@ onMounted(() => {
   font-size: 22px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.actions-section {
-  display: flex;
-  gap: 12px;
-  align-items: center;
 }
 
 .dropdown-wrapper {
@@ -396,14 +415,19 @@ onMounted(() => {
 }
 
 .dropdown-btn .arrow {
-  font-size: 14px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid currentColor;
+  transition: transform 0.2s ease-out;
 }
 
 .dropdown-menu {
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 0;
-  margin-bottom: 4px;
+  margin-top: 4px;
   background: rgba(30, 58, 138, 0.95);
   backdrop-filter: blur(10px);
   border: 2px solid var(--c-control-border);
@@ -413,7 +437,7 @@ onMounted(() => {
   min-width: 100%;
   max-height: 300px;
   overflow-y: auto;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-item {

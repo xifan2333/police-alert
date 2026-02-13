@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import ScrollTable from '@/components/ScrollTable.vue'
 import FloatingButton from '@/components/FloatingButton.vue'
@@ -13,6 +13,8 @@ const error = ref(null)
 const filterStatus = ref(null) // null 表示显示所有数据
 const filterRiskLevel = ref(null) // 风险等级筛选
 const filterOfficer = ref(null) // 警员筛选
+const sortField = ref('event_time')
+const sortOrder = ref('desc')
 const scrollTableRef = ref(null)
 const rulesDescription = ref('')
 
@@ -32,15 +34,15 @@ const pageSize = 6
 const total = ref(0)
 
 // 表头配置
-const headers = [
+const headers = computed(() => [
   { label: '事件名称', width: '280px', align: 'center' },
-  { label: '事件类型', width: '120px', align: 'center' },
+  { label: `事件类型 ${getSortIcon('event_type')}`, width: '150px', align: 'center', sortable: true, field: 'event_type' },
   { label: '事件内容', flex: 1, align: 'left', wrap: true },
-  { label: '事发时间', width: '180px', align: 'center' },
+  { label: `事发时间 ${getSortIcon('event_time')}`, width: '180px', align: 'center', sortable: true, field: 'event_time' },
   { label: '风险等级', width: '120px', align: 'center' },
   { label: '责任民警', width: '120px', align: 'center' },
   { label: '处置进度', width: '120px', align: 'center' }
-]
+])
 
 // 获取单元格值
 const getCellValue = (item, columnIndex) => {
@@ -92,6 +94,7 @@ const fetchData = async (page = 1) => {
     if (filterOfficer.value) {
       url += `&officer_name=${filterOfficer.value}`
     }
+    url += `&sort_field=${sortField.value}&sort_order=${sortOrder.value}`
 
     const response = await fetch(url)
     const result = await response.json()
@@ -165,6 +168,28 @@ const fetchFilterOptions = async () => {
   }
 }
 
+// 排序处理
+const handleSort = (field) => {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortOrder.value = 'asc'
+  }
+  currentPage.value = 1
+  fetchData(1)
+}
+
+// 获取排序图标
+const getSortIcon = (field) => {
+  if (sortField.value === field) {
+    const directionClass = sortOrder.value === 'asc' ? 'asc' : 'desc'
+    return `<span class="sort-icon ${directionClass}"></span>`
+  } else {
+    return `<span class="sort-icon default"></span>`
+  }
+}
+
 onMounted(() => {
   fetchFilterOptions()
   fetchData(1)
@@ -178,6 +203,55 @@ onMounted(() => {
     <div class="content-wrapper">
       <div class="list-wrapper">
         <div class="list-container">
+          <!-- 表格工具栏：筛选器 -->
+          <div class="table-toolbar">
+            <!-- 风险等级 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('riskLevel')">
+                风险等级: {{ filterRiskLevel || '全部' }}
+                <span class="arrow"></span>
+              </button>
+              <div v-show="dropdowns.riskLevel" class="dropdown-menu">
+                <div @click="handleFilter('risk_level', null)" :class="['dropdown-item', { active: filterRiskLevel === null }]">全部</div>
+                <div @click="handleFilter('risk_level', '高')" :class="['dropdown-item', { active: filterRiskLevel === '高' }]">高</div>
+                <div @click="handleFilter('risk_level', '中')" :class="['dropdown-item', { active: filterRiskLevel === '中' }]">中</div>
+                <div @click="handleFilter('risk_level', '低')" :class="['dropdown-item', { active: filterRiskLevel === '低' }]">低</div>
+              </div>
+            </div>
+
+            <!-- 责任民警 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('officer')">
+                责任民警: {{ filterOfficer || '全部' }}
+                <span class="arrow"></span>
+              </button>
+              <div v-show="dropdowns.officer" class="dropdown-menu">
+                <div @click="handleFilter('officer', null)" :class="['dropdown-item', { active: filterOfficer === null }]">全部</div>
+                <div
+                  v-for="officer in officerOptions"
+                  :key="officer"
+                  @click="handleFilter('officer', officer)"
+                  :class="['dropdown-item', { active: filterOfficer === officer }]"
+                >
+                  {{ officer }}
+                </div>
+              </div>
+            </div>
+
+            <!-- 处置进度 -->
+            <div class="dropdown-wrapper">
+              <button class="dropdown-btn" @click="toggleDropdown('status')">
+                处置进度: {{ filterStatus || '全部' }}
+                <span class="arrow"></span>
+              </button>
+              <div v-show="dropdowns.status" class="dropdown-menu">
+                <div @click="handleFilter('status', null)" :class="['dropdown-item', { active: filterStatus === null }]">全部</div>
+                <div @click="handleFilter('status', '待化解')" :class="['dropdown-item', { active: filterStatus === '待化解' }]">待化解</div>
+                <div @click="handleFilter('status', '待关注')" :class="['dropdown-item', { active: filterStatus === '待关注' }]">待关注</div>
+              </div>
+            </div>
+          </div>
+
           <!-- 加载状态 -->
           <div v-if="loading" class="h-full flex items-center justify-center">
             <div class="text-xl text-white">数据加载中...</div>
@@ -205,6 +279,7 @@ onMounted(() => {
             :total="total"
             :loading="loading"
             @page-change="handlePageChange"
+            @header-click="handleSort"
           />
 
           <!-- 无数据 -->
@@ -213,62 +288,10 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 底部控制栏 -->
-        <div class="filter-controls">
-          <!-- 左侧：规则描述 -->
-          <div v-if="rulesDescription" class="rules-section">
-            <span class="rules-label">显示规则：</span>
-            <span class="rules-text" v-html="rulesDescription"></span>
-          </div>
-
-          <!-- 右侧：操作按钮 -->
-          <div class="actions-section">
-            <!-- 风险等级 -->
-            <div class="dropdown-wrapper">
-              <button class="dropdown-btn" @click="toggleDropdown('riskLevel')">
-                风险等级: {{ filterRiskLevel || '全部' }}
-                <span class="arrow">▲</span>
-              </button>
-              <div v-show="dropdowns.riskLevel" class="dropdown-menu">
-                <div @click="handleFilter('risk_level', null)" :class="['dropdown-item', { active: filterRiskLevel === null }]">全部</div>
-                <div @click="handleFilter('risk_level', '高')" :class="['dropdown-item', { active: filterRiskLevel === '高' }]">高</div>
-                <div @click="handleFilter('risk_level', '中')" :class="['dropdown-item', { active: filterRiskLevel === '中' }]">中</div>
-                <div @click="handleFilter('risk_level', '低')" :class="['dropdown-item', { active: filterRiskLevel === '低' }]">低</div>
-              </div>
-            </div>
-
-            <!-- 状态筛选 -->
-            <div class="dropdown-wrapper">
-              <button class="dropdown-btn" @click="toggleDropdown('status')">
-                状态: {{ filterStatus || '全部' }}
-                <span class="arrow">▲</span>
-              </button>
-              <div v-show="dropdowns.status" class="dropdown-menu">
-                <div @click="handleFilter('status', null)" :class="['dropdown-item', { active: filterStatus === null }]">全部</div>
-                <div @click="handleFilter('status', '待化解')" :class="['dropdown-item', { active: filterStatus === '待化解' }]">待化解</div>
-                <div @click="handleFilter('status', '待关注')" :class="['dropdown-item', { active: filterStatus === '待关注' }]">待关注</div>
-              </div>
-            </div>
-
-            <!-- 责任民警 -->
-            <div class="dropdown-wrapper">
-              <button class="dropdown-btn" @click="toggleDropdown('officer')">
-                责任民警: {{ filterOfficer || '全部' }}
-                <span class="arrow">▲</span>
-              </button>
-              <div v-show="dropdowns.officer" class="dropdown-menu">
-                <div @click="handleFilter('officer', null)" :class="['dropdown-item', { active: filterOfficer === null }]">全部</div>
-                <div
-                  v-for="officer in officerOptions"
-                  :key="officer"
-                  @click="handleFilter('officer', officer)"
-                  :class="['dropdown-item', { active: filterOfficer === officer }]"
-                >
-                  {{ officer }}
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- 底部规则显示 -->
+        <div v-if="rulesDescription" class="rules-display">
+          <span class="rules-label">显示规则：</span>
+          <span class="rules-text" v-html="rulesDescription"></span>
         </div>
       </div>
     </div>
@@ -315,27 +338,27 @@ onMounted(() => {
   overflow: visible;
   margin-bottom: 12px;
   min-height: 0;
-}
-
-/* 底部筛选控制栏 */
-.filter-controls {
-  flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 12px;
-  background: rgba(var(--c-table-rgb), 0.15);
-  border-radius: 8px;
-  border: 1px solid var(--c-border);
+  flex-direction: column;
 }
 
-.rules-section {
-  flex: 1;
+.table-toolbar {
+  flex-shrink: 0;
+  padding-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.rules-display {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: rgba(var(--c-table-rgb), 0.15);
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
 }
 
 .rules-label {
@@ -353,13 +376,6 @@ onMounted(() => {
 
 .rules-text :deep(span) {
   color: inherit;
-}
-
-.actions-section {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-right: 80px;
 }
 
 .dropdown-wrapper {
@@ -387,14 +403,19 @@ onMounted(() => {
 }
 
 .dropdown-btn .arrow {
-  font-size: 14px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid currentColor;
+  transition: transform 0.2s ease-out;
 }
 
 .dropdown-menu {
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 0;
-  margin-bottom: 4px;
+  margin-top: 4px;
   background: rgba(30, 58, 138, 0.95);
   backdrop-filter: blur(10px);
   border: 2px solid var(--c-control-border);
@@ -404,7 +425,7 @@ onMounted(() => {
   min-width: 100%;
   max-height: 300px;
   overflow-y: auto;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-item {

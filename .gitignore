@@ -42,7 +42,6 @@ backend/data.db
 .ace-tool/index.json
 .ace-tool/index.json
 .ace-tool/index.json
-backend/示例数据_测试导入.xlsx
 backend/data.db
 backend/data.db.*
 backend/**/__pycache__/

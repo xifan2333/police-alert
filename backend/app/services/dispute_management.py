@@ -12,6 +12,8 @@ def list_dispute_management(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     officer_name: Optional[str] = None,
+    sort_field: str = "event_time",
+    sort_order: str = "desc",
     include_rules: bool = True
 ) -> Tuple[List[Dict[str, Any]], int, List[Dict[str, Any]]]:
     """
@@ -24,6 +26,8 @@ def list_dispute_management(
         status: 处置进度筛选
         risk_level: 风险等级筛选
         officer_name: 责任民警筛选
+        sort_field: 排序字段
+        sort_order: 排序方向 (asc/desc)
         include_rules: 是否包含规则
 
     Returns:
@@ -49,22 +53,22 @@ def list_dispute_management(
     # 查询总数
     total = query.count()
 
-    # 排序：风险等级高优先，事发时间降序
-    risk_level_order = {
-        "高": 1,
-        "中": 2,
-        "低": 3
+    # 排序
+    sort_map = {
+        'event_type': DisputeManagement.event_type,
+        'event_time': DisputeManagement.event_time
     }
+
+    sort_column = sort_map.get(sort_field, DisputeManagement.event_time)
+
+    if sort_order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
 
     # 分页
     offset = (page - 1) * page_size
     items_db = query.offset(offset).limit(page_size).all()
-
-    # 手动排序（SQLite 不支持 CASE WHEN）
-    items_db = sorted(items_db, key=lambda x: (
-        risk_level_order.get(x.risk_level, 99),
-        -x.event_time.timestamp()
-    ))
 
     # 获取规则
     rules = []

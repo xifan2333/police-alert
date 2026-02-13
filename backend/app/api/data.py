@@ -14,15 +14,16 @@ def get_risk_supervision(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     case_type: Optional[str] = Query(None, description="案件类型筛选"),
-    risk_type: Optional[str] = Query(None, description="风险类型筛选"),
+    problem_type: Optional[str] = Query(None, description="问题类型筛选"),
     officer_name: Optional[str] = Query(None, description="责任民警筛选"),
+    sort_field: str = Query("days_remaining", description="排序字段"),
     sort_order: str = Query("asc", regex="^(asc|desc)$", description="排序方向"),
     include_rules: bool = Query(True, description="是否包含规则"),
     db: Session = Depends(get_db)
 ):
     """获取执法问题风险盯办列表"""
     items, total, rules = risk_supervision.list_risk_supervision(
-        db, page, page_size, case_type, risk_type, officer_name, sort_order, include_rules
+        db, page, page_size, case_type, problem_type, officer_name, sort_field, sort_order, include_rules
     )
 
     return {
@@ -39,7 +40,8 @@ def get_risk_supervision(
 def get_risk_supervision_filter_options(db: Session = Depends(get_db)):
     """获取案件筛选选项"""
     officers = risk_supervision.get_officer_options(db)
-    return {"code": 200, "data": {"officers": officers}}
+    case_types = risk_supervision.get_case_type_options(db)
+    return {"code": 200, "data": {"officers": officers, "case_types": case_types}}
 
 
 @router.get("/dispute-management", tags=["数据"])
@@ -49,12 +51,14 @@ def get_dispute_management(
     status: Optional[str] = Query(None, description="处置进度筛选"),
     risk_level: Optional[str] = Query(None, description="风险等级筛选"),
     officer_name: Optional[str] = Query(None, description="责任民警筛选"),
+    sort_field: str = Query("event_time", description="排序字段"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$", description="排序方向"),
     include_rules: bool = Query(True, description="是否包含规则"),
     db: Session = Depends(get_db)
 ):
     """获取矛盾纠纷闭环管理列表"""
     items, total, rules = dispute_management.list_dispute_management(
-        db, page, page_size, status, risk_level, officer_name, include_rules
+        db, page, page_size, status, risk_level, officer_name, sort_field, sort_order, include_rules
     )
 
     return {

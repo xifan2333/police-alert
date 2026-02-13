@@ -9,3 +9,13 @@ wheels/
 # Virtual environments
 .venv
 .ace-tool/
+
+# Database files
+*.db
+*.db-journal
+*.db.backup-*
+
+# Test/Sample files
+示例数据_*.xlsx
+sample*.xlsx
+

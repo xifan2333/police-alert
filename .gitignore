@@ -45,3 +45,4 @@ backend/data.db
 backend/data.db
 backend/data.db.*
 backend/**/__pycache__/
+backend/**/*.xlsx
